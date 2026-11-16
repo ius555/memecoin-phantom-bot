@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reactor 1 — Cum funcționează o centrală nucleară</title>
+<style>
+  :root { --ink:#1b2330; --mute:#6b7685; --line:#d9dee4; --soft:#f4f6f8; --acc:#f28c28;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#fff; color:var(--ink);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .wrap { max-width:1180px; margin:0 auto; padding:48px 24px 72px; }
+  .lab { font:11px/1.3 var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--mute); }
+  header { display:grid; grid-template-columns:1fr 1fr; gap:32px; align-items:end;
+    border-bottom:1px solid var(--line); padding-bottom:28px; }
+  h1 { font-size:clamp(44px,8vw,88px); line-height:.95; margin:10px 0 8px; letter-spacing:-.03em; font-weight:700; }
+  h2 { font-size:clamp(18px,2.4vw,24px); font-weight:400; margin:0; color:var(--mute); }
+  header p { margin:0; max-width:52ch; }
+  #stage { position:relative; width:100%; aspect-ratio:16/8; min-height:320px; margin-top:8px;
+    border-bottom:1px solid var(--line); overflow:hidden; touch-action:none; }
+  #stage canvas { display:block; width:100%; height:100%; cursor:grab; }
+  #stage canvas:active { cursor:grabbing; }
+  .mk { position:absolute; left:0; top:0; width:28px; height:28px; margin:-14px 0 0 -14px; border-radius:50%;
+    border:1px solid var(--ink); background:#fff; color:var(--ink); font:600 12px/26px var(--mono);
+    text-align:center; padding:0; cursor:pointer; transition:background .2s,color .2s,border-color .2s; }
+  .mk:hover, .mk.on { background:var(--acc); border-color:var(--acc); color:#fff; }
+  .hint { position:absolute; right:10px; bottom:8px; }
+  .gauges { display:grid; grid-template-columns:repeat(6,1fr); border-bottom:1px solid var(--line); }
+  .g { padding:18px 16px 16px; border-left:1px solid var(--line); min-width:0; }
+  .g:first-child { border-left:0; padding-left:0; }
+  .g b { display:block; font:600 clamp(22px,2.6vw,32px)/1.1 var(--mono); margin:8px 0 2px; font-variant-numeric:tabular-nums; }
+  .bar { height:2px; background:var(--line); margin-top:10px; }
+  .bar i { display:block; height:100%; width:0; background:var(--acc); }
+  .ctrl { display:grid; grid-template-columns:1.5fr 1fr; gap:40px; padding:28px 0; border-bottom:1px solid var(--line); }
+  .sel { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0 14px; }
+  .sel button { font:11px/1 var(--mono); letter-spacing:.1em; text-transform:uppercase; padding:10px 12px;
+    background:#fff; color:var(--ink); border:1px solid var(--line); border-radius:999px; cursor:pointer; }
+  .sel button:hover { border-color:var(--ink); }
+  .sel button.on { background:var(--ink); border-color:var(--ink); color:#fff; }
+  #info { margin:0; min-height:4.6em; max-width:62ch; }
+  input[type=range] { width:100%; accent-color:var(--acc); margin:14px 0 6px; height:28px; }
+  .ends { display:flex; justify-content:space-between; }
+  ol { list-style:none; margin:0; padding:0; }
+  ol li { display:grid; grid-template-columns:36px 190px 1fr; gap:12px; padding:14px 0;
+    border-bottom:1px solid var(--line); align-items:baseline; }
+  ol li span:first-child { font:600 12px var(--mono); color:var(--acc); }
+  ol li strong { font-weight:600; }
+  ol li em { font-style:normal; color:var(--mute); }
+  h3 { margin:28px 0 4px; }
+  @media (max-width:800px) {
+    .wrap { padding:28px 16px 48px; }
+    header, .ctrl { grid-template-columns:1fr; gap:18px; }
+    #stage { aspect-ratio:4/3; }
+    .gauges { grid-template-columns:repeat(2,1fr); }
+    .g { border-left:0; border-top:1px solid var(--line); padding:14px 8px 12px 0; }
+    .g:nth-child(-n+2) { border-top:0; }
+    ol li { grid-template-columns:28px 1fr; }
+    ol li em { grid-column:2; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="lab">Fișă tehnică · Reactor cu apă sub presiune (PWR)</div>
+      <h1>Reactor 1</h1>
+      <h2>Cum devine un atom electricitate?</h2>
+    </div>
+    <p>O centrală nucleară este, în esență, un fierbător foarte mare. Fisiunea uraniului încălzește apa,
+      apa face abur, aburul învârte o turbină, iar turbina învârte un generator. Urmărește drumul
+      energiei prin cele șase stații și mișcă barele de control ca să vezi cum răspunde centrala.</p>
+  </header>
+
+  <div id="stage"><div class="lab hint">Trage = rotire · Click pe număr = apropiere</div></div>
+
+  <div class="gauges" id="gauges"></div>
+
+  <div class="ctrl">
+    <div>
+      <div class="lab">Selector stație</div>
+      <div class="sel" id="sel"></div>
+      <p id="info"></p>
+    </div>
+    <div>
+      <div class="lab">Bare de control · <span id="rodLab">0</span> % inserate</div>
+      <input id="rods" type="range" min="0" max="100" value="0" aria-label="Bare de control, procent inserat">
+      <div class="ends lab"><span>0 % · putere maximă</span><span>100 % · oprit</span></div>
+    </div>
+  </div>
+
+  <h3 class="lab">Cele 6 stații</h3>
+  <ol>
+    <li><span>01</span><strong>Reactor</strong><em>Atomii de uraniu se scindează și eliberează căldură; barele de control reglează reacția.</em></li>
+    <li><span>02</span><strong>Presurizor și circuit primar</strong><em>Apa la 155 bar rămâne lichidă la 325 °C și duce căldura mai departe, împinsă de pompă.</em></li>
+    <li><span>03</span><strong>Generator de abur</strong><em>Apa din primar fierbe apa din circuitul secundar prin pereții tuburilor, fără să se amestece.</em></li>
+    <li><span>04</span><strong>Turbină</strong><em>Aburul sub presiune lovește paletele și rotește axul la 3000 rpm.</em></li>
+    <li><span>05</span><strong>Generator electric</strong><em>Mișcarea de rotație devine curent electric, trimis în rețea prin linii de înaltă tensiune.</em></li>
+    <li><span>06</span><strong>Condensator și turn de răcire</strong><em>Aburul folosit redevine apă; turnul eliberează căldura rămasă ca vapori de apă curată.</em></li>
+  </ol>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ---------- scenă ---------- */
+const stage = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+stage.prepend(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xffffff);
+const camera = new THREE.PerspectiveCamera(28, 2, 1, 800);
+scene.add(new THREE.AmbientLight(0xffffff, 1.7));
+const sun = new THREE.DirectionalLight(0xffffff, 1.8);
+sun.position.set(20, 40, 30);
+scene.add(sun);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.maxPolarAngle = Math.PI / 2.05;
+controls.minDistance = 15;
+controls.maxDistance = 320;
+
+/* ---------- materiale (refolosite) ---------- */
+const L = (color, o = {}) => new THREE.MeshLambertMaterial({ color, ...o });
+const steel = L(0x8fa3b8), shell = L(0x9fb1c4, { side: THREE.DoubleSide }), dark = L(0x2f3944),
+  red = L(0xd9463b), blue = L(0x3b7dd9), cool = L(0x7fb6e8), steamPipe = L(0xcfd6de),
+  steam = L(0xe6ebf0, { transparent: true, opacity: .9 }), orange = L(0xf28c28),
+  fuel = L(0xf2a23c), plateM = L(0xf1f3f5), concrete = L(0xd5dae0, { side: THREE.DoubleSide }),
+  padOff = L(0xe4e8ec), padOn = L(0xf9c995),
+  pRed = L(0xffb9ad), pBlue = L(0xb5d4fb), pWhite = L(0xffffff);
+
+/* ---------- ajutoare ---------- */
+const PI = Math.PI;
+function add(geo, mat, x = 0, y = 0, z = 0, parent = scene) {
+  const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); parent.add(m); return m;
+}
+const cyl = (rt, rb, h, seg = 24, open = false, ts = 0, tl = PI * 2) =>
+  new THREE.CylinderGeometry(rt, rb, h, seg, 1, open, ts, tl);
+const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+const sph = (r) => new THREE.SphereGeometry(r, 16, 12);
+function tube(pts, r, mat) {
+  const c = new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(...p)));
+  add(new THREE.TubeGeometry(c, 40, r, 8), mat);
+  return c;
+}
+const dotGeo = sph(.48), parts = [];
+function flow(curve, n, mat, kind) {          // particule care curg prin țeavă
+  for (let i = 0; i < n; i++) parts.push({ m: add(dotGeo, mat), curve, t: i / n, kind });
+}
+const puffGeo = sph(1), puffs = [];
+function puff(x, y, z, rise, size, n) {       // sfere de abur care se ridică
+  for (let i = 0; i < n; i++)
+    puffs.push({ m: add(puffGeo, steam, x, y, z), x, y, z, rise, size, f: i / n, dx: (i % 2 ? .5 : -.5) });
+}
+
+/* ---------- placa de bază (colțuri rotunjite) ---------- */
+const W = 66, D = 28, R = 3;
+add(box(W - 2 * R, 1, D), plateM, 0, -.5, 0);
+add(box(W, 1, D - 2 * R), plateM, 0, -.5, 0);
+for (const sx of [-1, 1]) for (const sz of [-1, 1])
+  add(cyl(R, R, 1, 24), plateM, sx * (W / 2 - R), -.5, sz * (D / 2 - R));
+
+const SX = [-25, -15, -5, 5, 15, 25];
+const pads = SX.map(x => add(cyl(4.6, 4.6, .06, 40), padOff, x, .03, 0));
+
+/* ---------- 1. reactor ---------- */
+add(cyl(2.6, 2.6, 6, 32, true, 1.0, PI * 2 - 1.5), shell, -25, 6, 0);
+add(new THREE.SphereGeometry(2.6, 24, 10, 0, PI * 2, PI / 2, PI / 2), shell, -25, 3, 0);
+add(new THREE.TorusGeometry(2.6, .22, 8, 32), steel, -25, 9, 0).rotation.x = PI / 2;
+const rodGeo = cyl(.22, .22, 3.5, 8);
+for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) add(rodGeo, fuel, -25 + i, 4.95, j);
+const ctrlRods = new THREE.Group(); scene.add(ctrlRods);
+for (const i of [-.5, .5]) for (const j of [-.5, .5]) add(cyl(.14, .14, 3.5, 6), dark, -25 + i, 4.95, j, ctrlRods);
+add(box(1.6, .2, 1.6), dark, -25, 6.8, 0, ctrlRods);
+
+/* ---------- 2. presurizor + circuit primar ---------- */
+add(cyl(1.2, 1.2, 5), steel, -15, 5, -3.5);
+add(sph(1.2), steel, -15, 7.5, -3.5);
+add(sph(1.2), steel, -15, 2.5, -3.5);
+add(cyl(.8, .8, 1.4), steel, -15, .7, -3.5);
+tube([[-15, 6.5, -1], [-15, 6, -1.8], [-15, 5, -2.4]], .2, red);
+add(cyl(1, 1, 2.4), steel, -15, 1.2, 3.5);
+add(cyl(.7, .7, 2), orange, -15, 3.4, 3.5);
+const hot = tube([[-22.4, 6.5, 0], [-19, 6.5, -.5], [-15, 6.5, -1], [-10, 5.5, -.5], [-6.8, 4.5, 0]], .38, red);
+const cold = tube([[-6.8, 2.5, .8], [-10, 1.6, 3], [-15, 1.6, 3.5], [-20, 1.8, 2.5], [-22.5, 3.5, .6]], .38, blue);
+flow(hot, 5, pRed, 'p'); flow(cold, 6, pBlue, 'p');
+
+/* ---------- 3. generator de abur ---------- */
+add(cyl(1.8, 1.8, 8), steel, -5, 4.2, 0);
+add(cyl(2.4, 1.8, 1.2), steel, -5, 8.8, 0);
+add(cyl(2.4, 2.4, 3), steel, -5, 10.9, 0);
+add(sph(2.4), steel, -5, 12.4, 0);
+const main = tube([[-5, 14.4, 0], [-3, 16, 0], [0, 14.5, 0], [1.6, 9, 0], [2, 4, 0]], .34, steamPipe);
+flow(main, 6, pWhite, 's');
+puff(-5, 14.6, 1.2, 4, .7, 3);
+
+/* ---------- 4. turbină ---------- */
+const casing = add(cyl(2.7, 2.7, 6.4, 32, true, PI, PI), shell, 5, 3.5, 0);
+casing.rotation.z = PI / 2;
+add(box(.5, .9, 3.4), steel, 2.4, .45, 0);
+add(box(.5, .9, 3.4), steel, 7.6, .45, 0);
+const rotor = new THREE.Group(); rotor.position.set(5, 3.5, 0); scene.add(rotor);
+add(cyl(.3, .3, 11.2, 12), dark, 2, 0, 0, rotor).rotation.z = PI / 2;
+[[-2, 1.3], [0, 1.8], [2, 2.3]].forEach(([sx, r]) => {
+  const g = box(.22, r, .5);
+  for (let k = 0; k < 6; k++) {
+    const a = k * PI / 3, d = r / 2 + .3;
+    add(g, orange, sx, Math.cos(a) * d, Math.sin(a) * d, rotor).rotation.x = a;
+  }
+});
+
+/* ---------- 5. generator electric + stâlp ---------- */
+add(cyl(1.9, 1.9, 5, 28), steel, 15, 3.5, 0).rotation.z = PI / 2;
+for (const x of [13.3, 16.7]) add(new THREE.TorusGeometry(1.93, .16, 8, 28), orange, x, 3.5, 0).rotation.y = PI / 2;
+add(box(5, 1.7, 3), steel, 15, .85, 0);
+add(cyl(.12, .8, 10, 4), dark, 15, 5, -8);
+add(box(4.4, .18, .18), dark, 15, 8.5, -8);
+add(box(3, .18, .18), dark, 15, 9.6, -8);
+tube([[13.6, 5, -.8], [13.2, 6, -4.5], [12.9, 8.5, -8]], .06, dark);
+tube([[16.4, 5, -.8], [16.8, 6, -4.5], [17.1, 8.5, -8]], .06, dark);
+tube([[15, 5.4, -.8], [15.7, 6.8, -4.5], [16.4, 9.6, -8]], .06, dark);
+
+/* ---------- 6. condensator + turn de răcire ---------- */
+add(box(6, 2.4, 3.2), steel, 24, 1.2, 6);
+add(cyl(2.4, 3.8, 5.5, 32, true), concrete, 25, 2.75, -4);
+add(cyl(2.9, 2.4, 3.5, 32, true), concrete, 25, 7.25, -4);
+tube([[24.2, 1.4, 4.4], [24.2, 1.2, -.3]], .3, blue);
+tube([[25.8, 1.4, 4.4], [25.8, 1.2, -.3]], .3, cool);
+const exhaust = tube([[7.8, 1.6, 1.6], [11, 1, 5], [17, 1, 6.5], [21, 1.2, 6.5]], .34, steamPipe);
+const condensate = tube([[21.2, .6, 7.2], [10, .5, 9.5], [-2, .5, 8], [-5, 1.5, 1.8]], .28, cool);
+flow(exhaust, 3, pWhite, 's'); flow(condensate, 8, pBlue, 's');
+puff(25, 9, -4, 7, 1.5, 5);
+
+/* ---------- marcaje numerotate (HTML peste scenă) ---------- */
+const marks = SX.map((x, i) => {
+  const b = document.createElement('button');
+  b.className = 'mk'; b.textContent = i + 1; b.title = 'Stația ' + (i + 1);
+  b.onclick = () => flyTo(x, 4, 40);
+  stage.appendChild(b);
+  return { b, p: new THREE.Vector3(x, .2, 11.6) };
+});
+
+/* ---------- cameră ---------- */
+const DIR = new THREE.Vector3(.42, .6, 1).normalize();
+let fly = null;
+function flyTo(x, y, dist) {
+  const tgt = new THREE.Vector3(x, y, 0);
+  fly = { tgt, pos: tgt.clone().addScaledVector(DIR, dist) };
+}
+function homeDist() {
+  const t = Math.tan(camera.fov * PI / 360);
+  return Math.max(35 / (t * camera.aspect), 24 / t);
+}
+controls.addEventListener('start', () => { fly = null; });
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage);
+resize();
+controls.target.set(0, 3, 0);
+camera.position.copy(controls.target).addScaledVector(DIR, homeDist());
+
+/* ---------- indicatori ---------- */
+const GA = [
+  ['Bare de control', '% inserate', 100], ['Putere termică', 'MWt', 3000], ['Temp. circuit primar', '°C', 325],
+  ['Presiune', 'bar', 155], ['Turație turbină', 'rpm', 3000], ['Putere electrică', 'MWe', 990]
+].map(([label, unit, max]) => {
+  const d = document.createElement('div'); d.className = 'g';
+  d.innerHTML = `<div class="lab">${label}</div><b>0</b><div class="lab">${unit}</div><div class="bar"><i></i></div>`;
+  document.getElementById('gauges').appendChild(d);
+  return { v: d.querySelector('b'), bar: d.querySelector('i'), max, last: '' };
+});
+function setG(i, val) {
+  const g = GA[i], s = String(Math.round(val));
+  if (s === g.last) return;
+  g.last = s; g.v.textContent = s; g.bar.style.width = Math.min(100, val / g.max * 100) + '%';
+}
+
+/* ---------- selector ---------- */
+const MODES = [
+  ['OPRIT', [], 'Barele de control sunt complet inserate și absorb neutronii: reacția în lanț se oprește. Puterea, temperatura și turația scad lin spre zero. Mută sliderul ca să repornești reactorul.'],
+  ['REACTOR', [0, 1], 'În vasul reactorului, atomii de uraniu se scindează și încălzesc apa din circuitul primar până la ~325 °C. Presurizorul ține apa la 155 bar, ca să nu fiarbă.'],
+  ['ABUR', [2], 'Apa fierbinte din primar trece prin mii de tuburi în generatorul de abur și fierbe apa din circuitul secundar, fără să se amestece cu ea.'],
+  ['TURBINĂ', [3], 'Aburul sub presiune lovește paletele turbinei și o rotește la 3000 rpm. Căldura devine mișcare.'],
+  ['GENERATOR', [4], 'Turbina rotește generatorul electric, care transformă mișcarea în curent. Aproximativ o treime din căldură ajunge electricitate în rețea.'],
+  ['RĂCIRE', [5], 'Aburul folosit este răcit în condensator și redevine apă, care se întoarce la generatorul de abur. Turnul de răcire eliberează căldura rămasă sub formă de vapori de apă curată.'],
+  ['TOATE', [0, 1, 2, 3, 4, 5], 'Lanțul complet: fisiune → căldură → abur → mișcare → electricitate. Trei circuite de apă separate țin radioactivitatea în interiorul reactorului.']
+];
+const selEl = document.getElementById('sel'), info = document.getElementById('info');
+const slider = document.getElementById('rods'), rodLab = document.getElementById('rodLab');
+let rodT = 0;                                   // țintă inserție bare (0..1)
+function setRods(pct) { slider.value = pct; rodT = pct / 100; rodLab.textContent = pct; }
+slider.oninput = () => setRods(+slider.value);
+const btns = MODES.map(([name, on, text], i) => {
+  const b = document.createElement('button');
+  b.textContent = name;
+  b.onclick = () => setMode(i);
+  selEl.appendChild(b);
+  return b;
+});
+function setMode(i) {
+  const [, on, text] = MODES[i];
+  btns.forEach((b, k) => b.classList.toggle('on', k === i));
+  info.textContent = text;
+  pads.forEach((p, k) => { p.material = on.includes(k) ? padOn : padOff; });
+  marks.forEach((m, k) => m.b.classList.toggle('on', on.includes(k)));
+  if (i === 0) setRods(100);
+  if (on.length === 1) flyTo(SX[on[0]], 4, 40);
+  else if (on.length === 2) flyTo((SX[on[0]] + SX[on[1]]) / 2, 4, 50);
+  else flyTo(0, 3, homeDist());
+}
+setMode(6); fly = null;
+
+/* ---------- fizică simplificată + animație ---------- */
+let rod = 0, P = 0, rpm = 0, time = 0;
+const clock = new THREE.Clock(), v = new THREE.Vector3();
+const ease = (dt, tau) => 1 - Math.exp(-dt / tau);
+
+function tick() {
+  requestAnimationFrame(tick);
+  const dt = Math.min(clock.getDelta(), .1);
+  time += dt;
+
+  rod += (rodT - rod) * ease(dt, .8);                    // barele se mișcă lent
+  P += (3000 * (1 - rod) - P) * ease(dt, 2.5);           // putere termică, MWt
+  const p = P / 3000;
+  rpm += (3000 * p - rpm) * ease(dt, 1.5);
+  setG(0, rod * 100); setG(1, P); setG(2, 25 + 300 * p);
+  setG(3, 1 + 154 * p); setG(4, rpm); setG(5, P * .33);
+
+  ctrlRods.position.y = (1 - rod) * 3;
+  fuel.emissive.setRGB(p * .85, p * .22, 0);
+  rotor.rotation.x += rpm / 3000 * 14 * dt;
+
+  for (const q of parts) {
+    q.t = (q.t + (q.kind === 'p' ? .04 + .22 * p : .3 * p) * dt) % 1;
+    q.curve.getPointAt(q.t, q.m.position);
+    q.m.visible = q.kind === 'p' || p > .02;
+  }
+  for (const q of puffs) {
+    q.f = (q.f + (.05 + .2 * p) * dt) % 1;
+    const s = q.size * (.5 + q.f) * Math.sin(PI * q.f) * Math.min(1, p * 1.6);
+    q.m.visible = s > .02;
+    q.m.scale.setScalar(Math.max(s, .001));
+    q.m.position.set(q.x + q.dx * q.f * 1.5 + Math.sin(time + q.f * 6) * .2, q.y + q.rise * q.f, q.z);
+  }
+
+  if (fly) {
+    const k = ease(dt, .35);
+    camera.position.lerp(fly.pos, k); controls.target.lerp(fly.tgt, k);
+    if (camera.position.distanceTo(fly.pos) < .05) fly = null;
+  }
+  controls.update();
+  renderer.render(scene, camera);
+
+  const w = stage.clientWidth, h = stage.clientHeight;
+  for (const m of marks) {
+    v.copy(m.p).project(camera);
+    m.b.style.display = v.z > 1 ? 'none' : '';
+    m.b.style.transform = `translate(${((v.x + 1) / 2 * w).toFixed(1)}px,${((1 - v.y) / 2 * h).toFixed(1)}px)`;
+  }
+}
+tick();
+</script>
+</body>
+</html>
