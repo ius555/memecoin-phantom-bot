@@ -1,0 +1,210 @@
+@import 'tailwindcss';
+
+/* Ecrane foarte scunde: telefon ținut pe orizontală. */
+@custom-variant short (@media (max-height: 520px));
+
+@theme {
+  --font-serif: 'Fraunces Variable', ui-serif, Georgia, serif;
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-cream: #f7f2e7;
+  --color-cream-deep: #eee6d4;
+  --color-paper: #fcf9f2;
+  --color-ink: #1b1915;
+  --color-ink-soft: #3d382f;
+  --color-muted: #7b7467;
+  --color-line: #e2d8c3;
+  --color-go: #2f9d57;
+  --color-go-deep: #24824a;
+  --color-solder: #f08a1c;
+  --color-solder-deep: #d6740d;
+
+  --shadow-card: 0 1px 1px rgb(60 40 10 / 0.05), 0 12px 32px -14px rgb(60 40 10 / 0.32);
+  --shadow-pop: 0 2px 4px rgb(60 40 10 / 0.08), 0 22px 48px -16px rgb(60 40 10 / 0.42);
+
+  --animate-rise: rise 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-fade: fade 0.3s ease both;
+  --animate-sheet: sheet 0.36s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes sheet {
+    from {
+      opacity: 0;
+      transform: translateY(28px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes shimmer {
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
+}
+
+/* Stilurile de bază stau în stratul `base`, ca utilitarele (pill-ink etc.) să le poată suprascrie. */
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: #e3d6bf;
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  canvas {
+    touch-action: none;
+    outline: none;
+  }
+
+  button {
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+  }
+
+  button:disabled {
+    cursor: default;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+}
+
+/* ── elemente recurente ── */
+
+@utility card {
+  border-radius: 22px;
+  border: 1px solid color-mix(in srgb, var(--color-line) 85%, transparent);
+  background: color-mix(in srgb, var(--color-cream) 93%, transparent);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+}
+
+@utility kicker {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+@utility pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+  border-radius: 999px;
+  font-weight: 550;
+  line-height: 1;
+  transition:
+    background-color 0.16s ease,
+    color 0.16s ease,
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+}
+
+@utility pill-ink {
+  background: var(--color-ink);
+  color: var(--color-cream);
+  &:hover:not(:disabled) {
+    background: #000;
+  }
+}
+
+@utility pill-go {
+  background: var(--color-go);
+  color: #fff;
+  box-shadow: 0 6px 16px -8px var(--color-go-deep);
+  &:hover:not(:disabled) {
+    background: var(--color-go-deep);
+  }
+}
+
+@utility pill-solder {
+  background: var(--color-solder);
+  color: #fff;
+  &:hover:not(:disabled) {
+    background: var(--color-solder-deep);
+  }
+}
+
+@utility pill-ghost {
+  color: var(--color-ink-soft);
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-ink) 8%, transparent);
+  }
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-ink) 22%, transparent) transparent;
+}
+
+/* umbrire discretă a colțurilor, peste scenă */
+.vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgb(70 48 18 / 0.2) 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
