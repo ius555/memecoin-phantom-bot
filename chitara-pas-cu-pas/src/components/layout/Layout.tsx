@@ -8,6 +8,7 @@ const NAV = [
   { to: '/curs', label: 'Curs', icon: 'course' },
   { to: '/exersare', label: 'Exersează', icon: 'practice' },
   { to: '/acorduri', label: 'Acorduri', icon: 'chords' },
+  { to: '/simulator', label: 'Simulator', icon: 'cube' },
   { to: '/profil', label: 'Profil', icon: 'user' },
 ]
 
@@ -54,7 +55,7 @@ export function Layout() {
         className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur md:hidden"
         aria-label="Navigare principală"
       >
-        <div className="mx-auto grid max-w-lg grid-cols-5">
+        <div className="mx-auto grid max-w-lg grid-cols-6">
           {NAV.map((n) => (
             <NavLink
               key={n.to}
@@ -66,7 +67,7 @@ export function Layout() {
             >
               {({ isActive }) => (
                 <>
-                  <span className={`rounded-full px-4 py-1 transition ${isActive ? 'bg-primary-soft' : ''}`}>
+                  <span className={`rounded-full px-3.5 py-1 transition ${isActive ? 'bg-primary-soft' : ''}`}>
                     <Icon name={n.icon} size={22} />
                   </span>
                   {n.label}

@@ -9,6 +9,7 @@
  */
 import { getAudio } from './context'
 import { midiAt, midiToFreq } from '../music/theory'
+import { emitGuitarEvent } from './events'
 
 const cache = new Map<string, { buffer: AudioBuffer; rate: number }>()
 
@@ -157,7 +158,10 @@ export function playMidi(midi: number, opts: PlayOpts = {}) {
 
 /** Cântă o notă de pe o coardă (0 = coarda 6) și o tastă. */
 export function playNote(stringIndex: number, fret: number, opts: PlayOpts = {}) {
-  return playMidi(midiAt(stringIndex, fret), { stringIndex, ...opts })
+  const src = playMidi(midiAt(stringIndex, fret), { stringIndex, ...opts })
+  // anunțăm nota (pentru animații: coarda vibrează exact când se aude)
+  emitGuitarEvent({ type: 'note', string: stringIndex, fret, when: opts.when ?? getAudio().ctx.currentTime, velocity: opts.velocity ?? 0.8 })
+  return src
 }
 
 /** Poziția unui acord: 6 valori, de la coarda 6 la coarda 1; null = coardă care nu se cântă (x). */
@@ -182,6 +186,8 @@ export function strum(frets: Frets, opts: StrumOpts = {}) {
     indices = indices.reverse().slice(0, opts.upStrings ?? 4)
   }
   const vel = opts.velocity ?? (dir === 'down' ? 0.85 : 0.6)
+  // anunțăm lovitura de pană (pentru animația penei în simulatorul 3D)
+  emitGuitarEvent({ type: 'strum', direction: dir, strings: indices, when, spread })
   indices.forEach((si, k) => {
     // corzile cântate primele sunt puțin mai tari
     playNote(si, frets[si] as number, {
