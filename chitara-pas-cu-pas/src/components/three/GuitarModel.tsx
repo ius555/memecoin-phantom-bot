@@ -3,23 +3,14 @@
  * corp (contur Bézier extrudat), gura cu rozeta, grif, taste, prăguș, căluș, cap cu chei.
  * Corzile sunt desenate separat (Strings.tsx), pentru că ele se animă.
  *
- * Geometriile se creează o singură dată (useMemo) și au puține segmente (low-poly).
+ * Performanță: toate piesele statice care au același material sunt UNITE într-o singură
+ * geometrie (mergeGeometries). Rezultatul: ~14 apeluri de desenare pentru toată chitara,
+ * în loc de ~80 – important pe telefon. Geometriile au puține segmente (low-poly).
  */
 import { useMemo } from 'react'
 import * as THREE from 'three'
-import {
-  BODY_DEPTH,
-  BODY_LEN,
-  BODY_START,
-  FRET_COUNT,
-  SCALE,
-  SOUNDHOLE,
-  STRING_Y,
-  TOP_Y,
-  fretX,
-  neckWidth,
-  stringZ,
-} from './geometry'
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
+import { BODY_DEPTH, BODY_LEN, BODY_START, FRET_COUNT, SCALE, SOUNDHOLE, STRING_Y, TOP_Y, fretX, neckWidth, stringZ } from './geometry'
 import { COLORS, flat, toon } from './materials'
 
 /** Conturul corpului, în planul (u = de-a lungul, v = de-a curmezișul). */
@@ -38,7 +29,7 @@ function bodyShape(): THREE.Shape {
 }
 
 /** Un trapez extrudat (pentru grif și gât), de la x0 la x1, cu lățimi diferite la capete. */
-function taperGeometry(x0: number, x1: number, w0: number, w1: number, depth: number): THREE.ExtrudeGeometry {
+function taperGeometry(x0: number, x1: number, w0: number, w1: number, depth: number): THREE.BufferGeometry {
   const s = new THREE.Shape()
   s.moveTo(x0, -w0 / 2)
   s.lineTo(x1, -w1 / 2)
@@ -46,124 +37,107 @@ function taperGeometry(x0: number, x1: number, w0: number, w1: number, depth: nu
   s.lineTo(x0, w0 / 2)
   s.closePath()
   const g = new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: false })
-  // forma e în planul XY și se extrudează pe Z; o întindem în planul XZ, cu grosimea pe Y
+  // forma e în planul XY și se extrudează pe Z; o culcăm în planul XZ, cu grosimea pe Y
   g.rotateX(-Math.PI / 2)
   return g
 }
 
+// înclinarea capului spre spate (~13°) și pozițiile cheilor
+const HEAD_TILT = 0.22
+const HEAD_OFFSET = new THREE.Vector3(-0.5, -0.2, 0)
+const PEG_X = [-4.5, -9, -13.5]
+
+type Vec3 = [number, number, number]
+
+/** Colecționează piese (geometrie + transformare) pe chei de material, apoi le unește. */
+class PartList {
+  parts = new Map<string, THREE.BufferGeometry[]>()
+  add(material: string, geo: THREE.BufferGeometry, pos: Vec3 = [0, 0, 0], rot: Vec3 = [0, 0, 0], scale: Vec3 = [1, 1, 1], parent?: THREE.Matrix4) {
+    const m = new THREE.Matrix4().compose(new THREE.Vector3(...pos), new THREE.Quaternion().setFromEuler(new THREE.Euler(...rot)), new THREE.Vector3(...scale))
+    if (parent) m.premultiply(parent)
+    let g = geo.clone().applyMatrix4(m)
+    if (g.index) g = g.toNonIndexed()
+    g.clearGroups()
+    // păstrăm doar atributele comune tuturor geometriilor (poziție, normală, uv)
+    for (const name of Object.keys(g.attributes)) if (!['position', 'normal', 'uv'].includes(name)) g.deleteAttribute(name)
+    const list = this.parts.get(material) ?? []
+    list.push(g)
+    this.parts.set(material, list)
+  }
+  build(): { material: string; geometry: THREE.BufferGeometry }[] {
+    return [...this.parts.entries()].map(([material, list]) => ({ material, geometry: mergeGeometries(list, false)! }))
+  }
+}
+
+function buildGuitar() {
+  const P = new PartList()
+  const shape = bodyShape()
+
+  // ---- corpul
+  const body = new THREE.ExtrudeGeometry(shape, { depth: BODY_DEPTH, bevelEnabled: true, bevelThickness: 0.6, bevelSize: 0.6, bevelSegments: 1, curveSegments: 10 })
+  body.rotateX(-Math.PI / 2)
+  P.add(`toon:${COLORS.sides}`, body, [BODY_START, TOP_Y - BODY_DEPTH, 0])
+  const top = new THREE.ShapeGeometry(shape, 10)
+  top.rotateX(-Math.PI / 2)
+  P.add(`toon:${COLORS.top}`, top, [BODY_START, TOP_Y + 0.62, 0], [0, 0, 0], [0.985, 1, 0.97])
+  // gura și rozeta (verdele salvie al aplicației)
+  const flatDown: Vec3 = [-Math.PI / 2, 0, 0]
+  P.add(`flat:${COLORS.rosette}`, new THREE.RingGeometry(SOUNDHOLE.r + 0.3, SOUNDHOLE.r + 1.3, 28), [SOUNDHOLE.x, TOP_Y + 0.66, 0], flatDown)
+  P.add(`flat:${COLORS.hole}`, new THREE.CircleGeometry(SOUNDHOLE.r, 28), [SOUNDHOLE.x, TOP_Y + 0.67, 0], flatDown)
+  // placa de protecție, în formă de picătură
+  P.add(`toon:${COLORS.guard}`, new THREE.CircleGeometry(3.2, 12), [SOUNDHOLE.x + 3, TOP_Y + 0.65, -SOUNDHOLE.r - 3], [-Math.PI / 2, 0, 0.5], [1, 1.5, 1])
+  // căluşul, ştegul și pinii
+  P.add(`toon:${COLORS.bridge}`, new THREE.BoxGeometry(3, 0.9, 15), [SCALE + 1.4, TOP_Y + 1.1, 0])
+  P.add(`toon:${COLORS.bone}`, new THREE.BoxGeometry(0.35, 0.5, 7.2), [SCALE, STRING_Y - 0.25, 0])
+  const pin = new THREE.CylinderGeometry(0.28, 0.28, 0.3, 8)
+  for (let s = 0; s < 6; s++) P.add(`toon:${COLORS.bone}`, pin, [SCALE + 2.2, TOP_Y + 1.6, stringZ(s, SCALE) * 1.05])
+
+  // ---- gâtul, grifura, tastele
+  const fbEnd = fretX(FRET_COUNT) + 0.8
+  P.add(`toon:${COLORS.neck}`, taperGeometry(-0.4, BODY_START + 2, neckWidth(0), neckWidth(BODY_START), 2.2), [0, -2.8, 0])
+  P.add(`toon:${COLORS.fretboard}`, taperGeometry(-0.2, fbEnd, neckWidth(0), neckWidth(fbEnd), 0.6), [0, -0.6, 0])
+  for (let i = 1; i <= FRET_COUNT; i++) {
+    const x = fretX(i)
+    P.add(`toon:${COLORS.fret}`, new THREE.BoxGeometry(0.18, 0.12, neckWidth(x) - 0.1), [x, 0.04, 0])
+  }
+  const dot = new THREE.CircleGeometry(0.38, 12)
+  for (const n of [3, 5, 7, 9, 15, 17]) P.add(`flat:${COLORS.inlay}`, dot, [(fretX(n) + fretX(n - 1)) / 2, 0.01, 0], flatDown)
+  for (const z of [0.9, -0.9]) P.add(`flat:${COLORS.inlay}`, dot, [(fretX(12) + fretX(11)) / 2, 0.01, z], flatDown)
+  // prăguşul
+  P.add(`toon:${COLORS.bone}`, new THREE.BoxGeometry(0.5, 0.75, neckWidth(0)), [-0.25, 0.15, 0])
+
+  // ---- capul (înclinat), cu axele și cheile
+  const head = new THREE.Matrix4().compose(HEAD_OFFSET, new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, HEAD_TILT)), new THREE.Vector3(1, 1, 1))
+  const hs = new THREE.Shape()
+  hs.moveTo(0, -2.4)
+  hs.lineTo(-17, -3.9)
+  hs.quadraticCurveTo(-19.5, 0, -17, 3.9)
+  hs.lineTo(0, 2.4)
+  hs.closePath()
+  const headstock = new THREE.ExtrudeGeometry(hs, { depth: 1.4, bevelEnabled: false, curveSegments: 6 })
+  headstock.rotateX(-Math.PI / 2)
+  P.add(`toon:${COLORS.headstock}`, headstock, [0, -1.4, 0], [0, 0, 0], [1, 1, 1], head)
+  const post = new THREE.CylinderGeometry(0.3, 0.3, 1.1, 8)
+  const shaft = new THREE.CylinderGeometry(0.22, 0.22, 2, 6)
+  const button = new THREE.SphereGeometry(1, 10, 6)
+  for (const x of PEG_X)
+    for (const side of [1, -1]) {
+      const z = side * 2.6
+      P.add(`toon:${COLORS.post}`, post, [x, 0.5, z], [0, 0, 0], [1, 1, 1], head)
+      P.add(`toon:${COLORS.post}`, shaft, [x, -0.6, z + side * 1.9], [Math.PI / 2, 0, 0], [1, 1, 1], head)
+      P.add(`toon:${COLORS.peg}`, button, [x, -0.6, z + side * 3.3], [0, 0, 0], [1.2, 0.5, 0.9], head)
+    }
+  return P.build()
+}
+
 export function GuitarModel() {
-  const geo = useMemo(() => {
-    const shape = bodyShape()
-    const body = new THREE.ExtrudeGeometry(shape, {
-      depth: BODY_DEPTH,
-      bevelEnabled: true,
-      bevelThickness: 0.6,
-      bevelSize: 0.6,
-      bevelSegments: 1,
-      curveSegments: 10,
-    })
-    body.rotateX(-Math.PI / 2)
-    // fața corpului (un strat subțire, de altă culoare)
-    const top = new THREE.ShapeGeometry(shape, 10)
-    top.rotateX(-Math.PI / 2)
-    const fbEnd = fretX(FRET_COUNT) + 0.8
-    const fretboard = taperGeometry(-0.2, fbEnd, neckWidth(0), neckWidth(fbEnd), 0.6)
-    const neck = taperGeometry(-0.4, BODY_START + 2, neckWidth(0), neckWidth(BODY_START), 2.2)
-    // capul: o formă puțin evazată, cu vârful rotunjit
-    const hs = new THREE.Shape()
-    hs.moveTo(0, -2.4)
-    hs.lineTo(-17, -3.9)
-    hs.quadraticCurveTo(-19.5, 0, -17, 3.9)
-    hs.lineTo(0, 2.4)
-    hs.closePath()
-    const headstock = new THREE.ExtrudeGeometry(hs, { depth: 1.4, bevelEnabled: false, curveSegments: 6 })
-    headstock.rotateX(-Math.PI / 2)
-    return { body, top, fretboard, neck, headstock }
-  }, [])
-
-  // capul e înclinat spre spate (ca la chitarele reale), cu ~13°
-  const headTilt = 0.22
-  const pegs = [-4.5, -9, -13.5]
-
+  const meshes = useMemo(buildGuitar, [])
   return (
     <group>
-      {/* corpul: extrudat în jos de sub fața plăcii */}
-      <mesh geometry={geo.body} material={toon(COLORS.sides)} position={[BODY_START, TOP_Y - BODY_DEPTH, 0]} />
-      <mesh geometry={geo.top} material={toon(COLORS.top)} position={[BODY_START, TOP_Y + 0.62, 0]} scale={[0.985, 1, 0.97]} />
-      {/* gura și rozeta */}
-      <mesh material={flat(COLORS.rosette)} position={[SOUNDHOLE.x, TOP_Y + 0.66, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[SOUNDHOLE.r + 0.3, SOUNDHOLE.r + 1.3, 28]} />
-      </mesh>
-      <mesh material={flat(COLORS.hole)} position={[SOUNDHOLE.x, TOP_Y + 0.67, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[SOUNDHOLE.r, 28]} />
-      </mesh>
-      {/* placa de protecție (în formă de picătură, lângă gură, pe partea corzilor subțiri) */}
-      <mesh material={toon(COLORS.guard)} position={[SOUNDHOLE.x + 3, TOP_Y + 0.65, -SOUNDHOLE.r - 3]} rotation={[-Math.PI / 2, 0, 0.5]} scale={[1, 1.5, 1]}>
-        <circleGeometry args={[3.2, 12]} />
-      </mesh>
-      {/* căluşul + ştegul */}
-      <mesh material={toon(COLORS.bridge)} position={[SCALE + 1.4, TOP_Y + 1.1, 0]}>
-        <boxGeometry args={[3, 0.9, 15]} />
-      </mesh>
-      <mesh material={toon(COLORS.bone)} position={[SCALE, STRING_Y - 0.25, 0]}>
-        <boxGeometry args={[0.35, 0.5, 7.2]} />
-      </mesh>
-      {/* pinii căluşului */}
-      {[0, 1, 2, 3, 4, 5].map((s) => (
-        <mesh key={s} material={toon(COLORS.bone)} position={[SCALE + 2.2, TOP_Y + 1.6, stringZ(s, SCALE) * 1.05]}>
-          <cylinderGeometry args={[0.28, 0.28, 0.3, 8]} />
-        </mesh>
-      ))}
-
-      {/* gâtul și grifura */}
-      <mesh geometry={geo.neck} material={toon(COLORS.neck)} position={[0, -2.8, 0]} />
-      <mesh geometry={geo.fretboard} material={toon(COLORS.fretboard)} position={[0, -0.6, 0]} />
-      {/* barele tastelor */}
-      {Array.from({ length: FRET_COUNT }, (_, i) => {
-        const x = fretX(i + 1)
-        return (
-          <mesh key={i} material={toon(COLORS.fret)} position={[x, 0.04, 0]}>
-            <boxGeometry args={[0.18, 0.12, neckWidth(x) - 0.1]} />
-          </mesh>
-        )
+      {meshes.map(({ material, geometry }) => {
+        const [kind, color] = material.split(':')
+        return <mesh key={material} geometry={geometry} material={kind === 'flat' ? flat(color) : toon(color)} />
       })}
-      {/* semnele de poziție */}
-      {[3, 5, 7, 9, 15, 17].map((n) => (
-        <mesh key={n} material={flat(COLORS.inlay)} position={[(fretX(n) + fretX(n - 1)) / 2, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <circleGeometry args={[0.38, 12]} />
-        </mesh>
-      ))}
-      {[0.9, -0.9].map((z) => (
-        <mesh key={z} material={flat(COLORS.inlay)} position={[(fretX(12) + fretX(11)) / 2, 0.01, z]} rotation={[-Math.PI / 2, 0, 0]}>
-          <circleGeometry args={[0.38, 12]} />
-        </mesh>
-      ))}
-      {/* prăguşul */}
-      <mesh material={toon(COLORS.bone)} position={[-0.25, 0.15, 0]}>
-        <boxGeometry args={[0.5, 0.75, neckWidth(0)]} />
-      </mesh>
-
-      {/* capul, înclinat spre spate, cu cheile */}
-      <group position={[-0.5, -0.2, 0]} rotation={[0, 0, headTilt]}>
-        <mesh geometry={geo.headstock} material={toon(COLORS.headstock)} position={[0, -1.4, 0]} />
-        {pegs.map((x, i) =>
-          [1, -1].map((side) => (
-            <group key={`${i}${side}`} position={[x, 0, side * 2.6]}>
-              {/* axul pe care se înfășoară coarda */}
-              <mesh material={toon(COLORS.post)} position={[0, 0.5, 0]}>
-                <cylinderGeometry args={[0.3, 0.3, 1.1, 8]} />
-              </mesh>
-              {/* cheia (butonul) din lateral */}
-              <mesh material={toon(COLORS.post)} position={[0, -0.6, side * 1.9]} rotation={[Math.PI / 2, 0, 0]}>
-                <cylinderGeometry args={[0.22, 0.22, 2, 6]} />
-              </mesh>
-              <mesh material={toon(COLORS.peg)} position={[0, -0.6, side * 3.3]} scale={[1.2, 0.5, 0.9]}>
-                <sphereGeometry args={[1, 10, 6]} />
-              </mesh>
-            </group>
-          )),
-        )}
-      </group>
     </group>
   )
 }
@@ -171,11 +145,10 @@ export function GuitarModel() {
 /** Pozițiile (în coordonatele modelului) ale axelor de pe cap, unde se termină corzile. */
 export function pegPostPosition(s: number): THREE.Vector3 {
   // coarda 6, 5, 4 pe partea +z (bas), 1, 2, 3 pe partea −z; coarda 6 și 1 cel mai aproape de prăguș
-  const xs = [-4.5, -9, -13.5]
   const bass = s <= 2
   const idx = bass ? s : 5 - s
-  const v = new THREE.Vector3(xs[idx], 1.0, (bass ? 1 : -1) * 2.6)
-  v.applyAxisAngle(new THREE.Vector3(0, 0, 1), 0.22)
-  v.add(new THREE.Vector3(-0.5, -0.2, 0))
+  const v = new THREE.Vector3(PEG_X[idx], 1.0, (bass ? 1 : -1) * 2.6)
+  v.applyAxisAngle(new THREE.Vector3(0, 0, 1), HEAD_TILT)
+  v.add(HEAD_OFFSET)
   return v
 }

@@ -68,6 +68,9 @@ src/
     lesson/              afișarea blocurilor unei lecții
     layout/              antet, navigarea de jos
 
+    three/               simulatorul 3D (vezi mai jos)
+    ChordViews.tsx       comutatorul 2D/3D și blocul de acorduri din lecții
+
   pages/                 câte o pagină pe rută
 ```
 
@@ -109,3 +112,22 @@ Audio și microfonul au fost testate cu semnale sintetizate:
 - detectorul de frecvență, pe notele sintetizate ale celor 6 corzi: eroare 0 cenți;
 - acordorul, cu un fișier WAV dat browserului ca „microfon” (A la 108 Hz → „prea jos, −32 cenți”);
 - recunoașterea acordurilor: C recunoscut ca C, Am ca Am, iar C cântat când ținta e Am → „lipsește nota A”.
+
+## Simulatorul 3D (adăugat ulterior)
+
+```
+src/audio/events.ts            canal de evenimente: fiecare notă / strum anunță coarda și momentul audio
+src/components/three/
+  Guitar3D.tsx                 componenta publică (mică): lazy loading, unghiuri, vizibilitate, revenire la 2D
+  GuitarScene.tsx              scena (încărcată la cerere): Canvas, lumini, PerformanceMonitor
+  GuitarModel.tsx              chitara din forme simple, unite pe material
+  Strings.tsx                  corzile (Line2) care vibrează și se aprind; zone de atingere
+  Fingers.tsx                  bulinele degetelor, barré, X/O, numerele tastelor; animațiile lor
+  Pick.tsx                     pana sincronizată cu loviturile de strum
+  CameraRig.tsx                OrbitControls cu limite + tranziția între unghiuri
+  geometry.ts / chordLayout.ts funcții pure: poziția tastelor și a corzilor, ținte pentru degete
+  views.ts / support.ts        definirea unghiurilor; detectarea WebGL / dispozitiv slab
+```
+
+Datele acordurilor rămân într-un singur loc (`src/music/chords.ts`) și sunt citite atât de diagrama 2D,
+cât și de modelul 3D.

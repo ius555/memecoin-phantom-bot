@@ -145,9 +145,8 @@ export function Strings({ onPluck }: { onPluck?: (s: number) => void }) {
           lineWidth={s < 3 ? 3.2 - s * 0.35 : 2.2 - (s - 3) * 0.25}
         />
       ))}
-      {headLines.map((pts, s) => (
-        <Line key={`h${s}`} points={pts} color={s < 3 ? COLORS.woundString : COLORS.plainString} lineWidth={1.4} />
-      ))}
+      {/* toate corzile de pe cap într-un singur obiect (un singur apel de desenare) */}
+      <Line points={headLines.flat()} segments color={COLORS.plainString} lineWidth={1.4} />
       {/* zone invizibile, mai groase, ca să poți atinge o coardă cu degetul */}
       {[0, 1, 2, 3, 4, 5].map((s) => {
         const x0 = 0

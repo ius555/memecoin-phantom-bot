@@ -56,8 +56,10 @@ export function Guitar3D({ chord, shapeIndex = 0, height = 340, initialView = 'p
     return s.ok ? null : s.reason
   })
   const [visible, setVisible] = useState(false)
-  // scena se montează la prima apariție pe ecran și rămâne montată (doar randarea se oprește)
+  // scena există doar cât e (aproape) pe ecran: când ieși din ea, randarea se oprește imediat,
+  // iar după câteva secunde scena e demontată și contextul WebGL eliberat (memorie pe telefon)
   const [mounted, setMounted] = useState(false)
+  const unmountTimer = useRef<number | null>(null)
   const box = useRef<HTMLDivElement>(null)
   const ch = typeof chord === 'string' ? getChord(chord) : chord
   const shape = ch?.shapes[Math.min(shapeIndex, (ch?.shapes.length ?? 1) - 1)]
@@ -73,12 +75,17 @@ export function Guitar3D({ chord, shapeIndex = 0, height = 340, initialView = 'p
     const io = new IntersectionObserver(
       ([entry]) => {
         setVisible(entry.isIntersecting)
+        if (unmountTimer.current) clearTimeout(unmountTimer.current)
         if (entry.isIntersecting) setMounted(true)
+        else unmountTimer.current = window.setTimeout(() => setMounted(false), 8000)
       },
-      { rootMargin: '100px' },
+      { rootMargin: '150px' },
     )
     io.observe(el)
-    return () => io.disconnect()
+    return () => {
+      io.disconnect()
+      if (unmountTimer.current) clearTimeout(unmountTimer.current)
+    }
   }, [fail])
 
   function pluck(s: number) {

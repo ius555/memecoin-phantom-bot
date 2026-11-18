@@ -53,14 +53,17 @@ export default function GuitarScene({ strumming = false, shape, replayKey, theme
     const x1 = STRUM_X + 5
     return { x: (x0 + x1) / 2, width: (x1 - x0) * 1.02 }
   }, [shape, strumming])
+  // rezoluția: maxim 1,75× (pe ecranele foarte dense diferența nu se vede, dar costă mult)
   const [dpr, setDpr] = useState(() => Math.min(1.75, window.devicePixelRatio || 1))
+  // pe ecranele dense, marginile sunt oricum fine – renunțăm la antialiasing (scump pe telefon)
+  const [antialias] = useState(() => (window.devicePixelRatio || 1) < 2)
 
   return (
     <Canvas
       frameloop={active ? 'demand' : 'never'}
       dpr={dpr}
       camera={{ fov: 38, near: 1, far: 800, position: [0, 0, 60] }}
-      gl={{ antialias: true, alpha: true, powerPreference: 'default' }}
+      gl={{ antialias, alpha: true, powerPreference: 'default', stencil: false }}
       onCreated={({ gl }) => {
         gl.domElement.addEventListener('webglcontextlost', (e) => {
           e.preventDefault()
