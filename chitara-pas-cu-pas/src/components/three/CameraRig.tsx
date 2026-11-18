@@ -21,12 +21,15 @@ export function CameraRig({
   viewKey,
   model,
   mirror,
+  focus,
 }: {
   view: ViewId
   /** se schimbă când utilizatorul apasă din nou pe același unghi (reîncadrare) */
   viewKey: number
   model: React.RefObject<THREE.Group | null>
   mirror: boolean
+  /** zona de grif de încadrat (pentru unghiurile apropiate); se ignoră la „Din față” */
+  focus: { x: number; width: number }
 }) {
   const { camera, invalidate, size } = useThree()
   const controls = useRef<OrbitControlsImpl | null>(null)
@@ -50,14 +53,18 @@ export function CameraRig({
     const def = VIEWS[view]
     const [rx, ry, rz, order] = def.rotation
     const d2r = THREE.MathUtils.degToRad
-    const toQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(d2r(rx), d2r(ry), d2r(rz), order))
+    // pentru stângaci, și înclinarea laterală se oglindește
+    const toQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(d2r(rx), d2r(mirror ? -ry : ry), d2r(rz), order))
     // punctul de focus, transformat cu noua rotație (și oglindit pentru stângaci)
-    const f = new THREE.Vector3(def.focus[0] * (mirror ? -1 : 1), def.focus[1], def.focus[2]).applyQuaternion(toQ)
+    const close = view !== 'front'
+    const fx = close ? focus.x : def.focus[0]
+    const f = new THREE.Vector3(fx * (mirror ? -1 : 1), def.focus[1], def.focus[2]).applyQuaternion(toQ)
     const toTarget = f
     // distanța la care lățimea dorită umple ecranul (ținând cont că pe telefon ecranul e îngust)
     const cam = camera as THREE.PerspectiveCamera
     const halfTan = Math.tan(d2r(cam.fov / 2))
-    const distance = Math.max(def.fitWidth / 2 / (halfTan * Math.max(0.5, size.width / size.height)), 16)
+    const fitWidth = close ? Math.max(focus.width, 20) * (view === 'player' ? 1.05 : 1) : def.fitWidth
+    const distance = Math.max(fitWidth / 2 / (halfTan * Math.max(0.5, size.width / size.height)), 16)
     const toCam = f.clone().add(new THREE.Vector3(0, 0, distance))
     center.current.copy(new THREE.Vector3(32 * (mirror ? -1 : 1), 0, 0).applyQuaternion(toQ))
     if (first.current) {
@@ -81,7 +88,7 @@ export function CameraRig({
     }
     invalidate()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, viewKey, mirror, camera, model, invalidate])
+  }, [view, viewKey, mirror, camera, model, invalidate, focus.x, focus.width])
 
   useFrame(() => {
     const a = anim.current

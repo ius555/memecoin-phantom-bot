@@ -25,6 +25,8 @@ export interface Guitar3DProps {
   height?: number
   initialView?: ViewId
   className?: string
+  /** crește din exterior ca să repornească animația degetelor */
+  replayKey?: number
 }
 
 type FailReason = 'no-webgl' | 'weak' | 'slow' | 'error'
@@ -43,8 +45,8 @@ class SceneBoundary extends Component<{ onError: () => void; children: ReactNode
   }
 }
 
-export function Guitar3D({ chord, shapeIndex = 0, height = 340, initialView = 'player', className = '' }: Guitar3DProps) {
-  const { settings } = useSettings()
+export function Guitar3D({ chord, shapeIndex = 0, height = 340, initialView = 'player', className = '', replayKey = 0 }: Guitar3DProps) {
+  const { settings, isDark } = useSettings()
   const [view, setView] = useState<ViewId>(initialView)
   const [viewKey, setViewKey] = useState(0)
   const [fail, setFail] = useState<FailReason | null>(() => {
@@ -110,6 +112,9 @@ export function Guitar3D({ chord, shapeIndex = 0, height = 340, initialView = 'p
           <SceneBoundary onError={() => setFail('error')}>
             <Suspense fallback={<Loading />}>
               <GuitarScene
+                shape={shape}
+                replayKey={replayKey}
+                themeKey={isDark ? 'dark' : 'light'}
                 view={view}
                 viewKey={viewKey}
                 mirror={settings.leftHanded}

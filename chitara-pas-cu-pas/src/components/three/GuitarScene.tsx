@@ -7,17 +7,26 @@
  * - fără umbre, materiale toon ieftine, rezoluție limitată (dpr ≤ 1,75)
  * - PerformanceMonitor: dacă telefonul nu face față, scădem rezoluția, apoi anunțăm trecerea la 2D
  */
-import { useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { PerformanceMonitor } from '@react-three/drei'
 import * as THREE from 'three'
 import { GuitarModel } from './GuitarModel'
 import { Strings } from './Strings'
 import { CameraRig } from './CameraRig'
+import { Fingers } from './Fingers'
+import type { ChordShape } from '../../music/chords'
 import type { ViewId } from './views'
 import { useState } from 'react'
+import { chordFocus } from './chordLayout'
 
 export interface GuitarSceneProps {
+  /** poziția acordului afișat (aceleași date ca diagrama 2D) */
+  shape?: ChordShape
+  /** crește ca să repornească animația degetelor */
+  replayKey: number
+  /** se schimbă cu tema (culorile degetelor vin din CSS) */
+  themeKey: string
   view: ViewId
   viewKey: number
   mirror: boolean
@@ -30,8 +39,9 @@ export interface GuitarSceneProps {
   onContextLost?: () => void
 }
 
-export default function GuitarScene({ view, viewKey, mirror, active, onPluck, onPerformanceFail, onContextLost }: GuitarSceneProps) {
+export default function GuitarScene({ shape, replayKey, themeKey, view, viewKey, mirror, active, onPluck, onPerformanceFail, onContextLost }: GuitarSceneProps) {
   const model = useRef<THREE.Group>(null)
+  const focus = useMemo(() => chordFocus(shape), [shape])
   const [dpr, setDpr] = useState(() => Math.min(1.75, window.devicePixelRatio || 1))
 
   return (
@@ -60,9 +70,10 @@ export default function GuitarScene({ view, viewKey, mirror, active, onPluck, on
         <group scale={[mirror ? -1 : 1, 1, 1]}>
           <GuitarModel />
           <Strings onPluck={onPluck} />
+          <Fingers shape={shape} replayKey={replayKey} themeKey={themeKey} view={view} mirror={mirror} />
         </group>
       </group>
-      <CameraRig view={view} viewKey={viewKey} model={model} mirror={mirror} />
+      <CameraRig view={view} viewKey={viewKey} model={model} mirror={mirror} focus={focus} />
     </Canvas>
   )
 }
