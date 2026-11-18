@@ -15,7 +15,6 @@ export type WidgetName =
   | 'tuner' // acordor cu microfon
   | 'chordReading' // cum citești o diagramă
   | 'tabReading' // cum citești un tab
-  | 'singleString' // exercițiu pe o coardă
   | 'chromatic' // exercițiul 1-2-3-4
   | 'metronome'
   | 'counting' // numărat "1 și 2 și"

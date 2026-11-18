@@ -33,6 +33,7 @@ src/
     theory.ts            note, frecvențe, acordajul standard, transpunere
     chords.ts            biblioteca de acorduri (poziții, degete, variante)
     strumming.ts         modele de strumming (D-DU-UDU etc.)
+    tab.ts               citirea tabulatoarelor ASCII
     progressions.ts      progresii celebre (I–V–vi–IV ...) în mai multe tonalități
     fingerpicking.ts     modele p-i-m-a
     songs.ts             cântece populare românești + compoziții originale
@@ -45,6 +46,12 @@ src/
     tips.ts              sfaturi pentru probleme frecvente
     routines.ts          rutinele zilnice 10/20/30 min
 
+  hooks/
+    useClock.ts          ceasul audio precis, ca hook React
+    usePlayAlong.ts      motorul de acompaniament (acorduri + strumming/fingerpicking + metronom)
+    useChordListener.ts  microfon → chromagramă netezită
+    usePracticeTracker.ts timpul de practică (pentru streak)
+
   store/
     progress.tsx         context React: lecții terminate, XP, streak, insigne, istoric
     settings.tsx         context React: temă, mod stângaci, volum
@@ -56,7 +63,9 @@ src/
     TabView.tsx          tabulator SVG
     GuitarAnatomy.tsx    chitara interactivă (atingi o parte → explicație)
     Metronome.tsx, Tuner.tsx, StrumPattern.tsx, OneMinuteChange.tsx,
-    PickingPattern.tsx, ProgressionPlayer.tsx, Quiz.tsx, ...
+    PickingPatternView.tsx, ProgressionPlayer.tsx, Quiz.tsx, ...
+    widgets/             widget-urile lecțiilor (chitara interactivă, postură, barré, pentatonică...)
+    lesson/              afișarea blocurilor unei lecții
     layout/              antet, navigarea de jos
 
   pages/                 câte o pagină pe rută
@@ -91,3 +100,12 @@ Termini toate lecțiile unui nivel → insignă.
 4. Metronom și acordor (microfon)
 5. Restul lecțiilor + biblioteca, editorul de progresii, jocul, testul de auz,
    recunoașterea acordurilor, cântece, gamificare, rutine, sfaturi, PWA
+
+## Verificare
+
+La fiecare etapă aplicația a fost compilată (`npm run build`) și verificată în Chromium (Playwright),
+la dimensiunea unui telefon: fără erori în consolă, capturi de ecran pe teme deschisă/întunecată.
+Audio și microfonul au fost testate cu semnale sintetizate:
+- detectorul de frecvență, pe notele sintetizate ale celor 6 corzi: eroare 0 cenți;
+- acordorul, cu un fișier WAV dat browserului ca „microfon” (A la 108 Hz → „prea jos, −32 cenți”);
+- recunoașterea acordurilor: C recunoscut ca C, Am ca Am, iar C cântat când ținta e Am → „lipsește nota A”.

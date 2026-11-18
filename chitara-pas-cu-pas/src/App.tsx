@@ -11,7 +11,12 @@ import { ChordsPage } from './pages/ChordsPage'
 import { ChordDetailPage } from './pages/ChordDetailPage'
 import { TunerPage } from './pages/TunerPage'
 import { MetronomePage } from './pages/MetronomePage'
-import { ComingSoon } from './pages/ComingSoon'
+import { OneMinutePage } from './pages/OneMinutePage'
+import { EditorPage } from './pages/EditorPage'
+import { GamePage } from './pages/GamePage'
+import { EarPage } from './pages/EarPage'
+import { RecognizePage } from './pages/RecognizePage'
+import { SongsPage, SongPage } from './pages/SongsPage'
 
 /**
  * Rutele aplicației. Folosim HashRouter (#/curs/...) ca aplicația să meargă
@@ -28,14 +33,15 @@ export default function App() {
           <Route path="exersare" element={<PracticePage />} />
           <Route path="exersare/acordor" element={<TunerPage />} />
           <Route path="exersare/metronom" element={<MetronomePage />} />
-          <Route path="exersare/schimbari" element={<ComingSoon title="One-minute change" />} />
-          <Route path="exersare/progresii" element={<ComingSoon title="Editor de progresii" />} />
-          <Route path="exersare/joc" element={<ComingSoon title="Jocul schimbărilor" />} />
-          <Route path="exersare/auz" element={<ComingSoon title="Test de auz" />} />
-          <Route path="exersare/recunoastere" element={<ComingSoon title="Verifică acordul" />} />
+          <Route path="exersare/schimbari" element={<OneMinutePage />} />
+          <Route path="exersare/progresii" element={<EditorPage />} />
+          <Route path="exersare/joc" element={<GamePage />} />
+          <Route path="exersare/auz" element={<EarPage />} />
+          <Route path="exersare/recunoastere" element={<RecognizePage />} />
           <Route path="acorduri" element={<ChordsPage />} />
           <Route path="acorduri/:name" element={<ChordDetailPage />} />
-          <Route path="cantece" element={<ComingSoon title="Cântece" />} />
+          <Route path="cantece" element={<SongsPage />} />
+          <Route path="cantece/:songId" element={<SongPage />} />
           <Route path="rutina" element={<RoutinePage />} />
           <Route path="sfaturi" element={<TipsPage />} />
           <Route path="profil" element={<ProfilePage />} />
