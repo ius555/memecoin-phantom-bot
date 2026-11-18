@@ -1,0 +1,184 @@
+@import 'tailwindcss';
+
+/* Tema întunecată se activează prin clasa .dark pe <html> */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Tokenuri de culoare – paletă caldă: crem, lemn, verde salvie.
+ * Componentele folosesc numai aceste nume (bg-surface, text-ink, bg-primary ...),
+ * deci tema se schimbă dintr-un singur loc.
+ */
+:root {
+  --bg: #f7f1e6;
+  --surface: #fffcf6;
+  --surface-2: #f0e7d8;
+  --ink: #2c241d;
+  --muted: #6e6152;
+  --line: #e2d5c1;
+  --primary: #3f6b4a; /* verde salvie închis */
+  --primary-soft: #dcebdc;
+  --primary-ink: #ffffff;
+  --wood: #a5643a; /* lemn de nuc */
+  --wood-soft: #f3e1cf;
+  --good: #2f8a4c;
+  --bad: #c0462f;
+  --warn: #c98a12;
+  /* culorile degetelor (1–4) + degetul mare */
+  --f1: #3f9a5a;
+  --f2: #2f7fc1;
+  --f3: #d77a22;
+  --f4: #a24c8f;
+  --fT: #7a6a58;
+  /* lemnul grifului în diagrame */
+  --fretboard: #f1e2c6;
+  --fret: #b9a184;
+  --string: #6f5a45;
+  color-scheme: light;
+}
+
+.dark {
+  --bg: #1b1713;
+  --surface: #26201a;
+  --surface-2: #322a22;
+  --ink: #f4ecdf;
+  --muted: #b9aa97;
+  --line: #3e342a;
+  --primary: #7cb48a;
+  --primary-soft: #2c3d2f;
+  --primary-ink: #13200f;
+  --wood: #d79c66;
+  --wood-soft: #3d2d1f;
+  --good: #6cc184;
+  --bad: #ec7a62;
+  --warn: #e9b44c;
+  --f1: #62c07c;
+  --f2: #5ea7e6;
+  --f3: #f0994a;
+  --f4: #cf78ba;
+  --fT: #b5a28c;
+  --fretboard: #3a2c20;
+  --fret: #806a52;
+  --string: #c9b59c;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-primary: var(--primary);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-ink: var(--primary-ink);
+  --color-wood: var(--wood);
+  --color-wood-soft: var(--wood-soft);
+  --color-good: var(--good);
+  --color-bad: var(--bad);
+  --color-warn: var(--warn);
+  --font-sans: 'Nunito', 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-sans);
+  min-height: 100dvh;
+}
+
+/* ---------- clase reutilizabile (în Tailwind v4 se definesc cu @utility) ---------- */
+@utility card {
+  @apply rounded-2xl border border-line bg-surface p-4 shadow-[0_1px_0_rgba(0,0,0,0.04)];
+}
+@utility btn {
+  @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-bold transition active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100;
+}
+@utility btn-primary {
+  @apply btn bg-primary text-primary-ink hover:brightness-110;
+}
+@utility btn-wood {
+  @apply btn bg-wood text-white hover:brightness-110 dark:text-[#1b1713];
+}
+@utility btn-ghost {
+  @apply btn border border-line bg-surface text-ink hover:bg-surface-2;
+}
+@utility chip {
+  @apply inline-flex items-center gap-1 rounded-full bg-surface-2 px-3 py-1 text-sm font-semibold text-muted;
+}
+@utility h-display {
+  font-family: var(--font-display);
+  @apply font-semibold tracking-tight;
+}
+@utility prose-lesson {
+  & p {
+    @apply mb-3 leading-relaxed;
+  }
+}
+
+/* animația degetelor în diagrame: apar pe rând */
+@keyframes finger-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.finger-pop {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: finger-pop 380ms cubic-bezier(0.3, 1.4, 0.5, 1) both;
+}
+
+@keyframes string-buzz {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-0.8px);
+  }
+  75% {
+    transform: translateX(0.8px);
+  }
+}
+.string-vibrate {
+  animation: string-buzz 70ms linear 8;
+}
+
+@keyframes pulse-beat {
+  0% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.beat-pulse {
+  animation: pulse-beat 160ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .finger-pop,
+  .string-vibrate,
+  .beat-pulse {
+    animation: none !important;
+  }
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
