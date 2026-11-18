@@ -1,7 +1,7 @@
 import type { LessonBlock } from '../../data/lessons/types'
 import { RichText } from '../RichText'
 import { ExerciseCard } from './ExerciseCard'
-import { ChordDiagram } from '../ChordDiagram'
+import { ChordBlock } from '../ChordViews'
 import { WidgetBlock } from './WidgetBlock'
 import { TabView } from '../TabView'
 
@@ -26,18 +26,7 @@ export function LessonBlockView({ block }: { block: LessonBlock }) {
         </aside>
       )
     case 'chords':
-      return (
-        <figure>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {block.chords.map((c) => (
-              <div key={c} className="card !p-2">
-                <ChordDiagram chord={c} playable />
-              </div>
-            ))}
-          </div>
-          {block.caption && <figcaption className="mt-2 text-center text-sm text-muted">{block.caption}</figcaption>}
-        </figure>
-      )
+      return <ChordBlock chords={block.chords} caption={block.caption} />
     case 'tab':
       return <TabView tab={block.tab} title={block.title} bpm={block.bpm} />
     case 'exercise':

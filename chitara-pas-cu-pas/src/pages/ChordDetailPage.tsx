@@ -4,19 +4,23 @@ import { chordFullName, chordPitchClasses, getChord } from '../music/chords'
 import { ChordDiagram, FINGER_COLORS, FINGER_NAMES, FingerLegend } from '../components/ChordDiagram'
 import { PageHeader } from '../components/PageHeader'
 import { NOTE_NAMES, SOLFEGE } from '../music/theory'
+import { ViewToggle } from '../components/ChordViews'
+import { Guitar3D } from '../components/three/Guitar3D'
+import { useSettings } from '../store/settings'
 
 /** Pagina unui acord: diagrama mare, variantele de poziție, notele și instrucțiuni pas cu pas. */
 export function ChordDetailPage() {
   const { name = '' } = useParams()
   const ch = getChord(decodeURIComponent(name))
   const [shapeIndex, setShapeIndex] = useState(0)
+  const { settings } = useSettings()
   if (!ch) return <Navigate to="/acorduri" replace />
   const s = ch.shapes[shapeIndex]
   const pcs = chordPitchClasses(ch)
 
   return (
     <div>
-      <PageHeader back="/acorduri" title={`Acordul ${ch.name}`} subtitle={chordFullName(ch)} />
+      <PageHeader back="/acorduri" title={`Acordul ${ch.name}`} subtitle={chordFullName(ch)} right={<ViewToggle />} />
 
       {ch.shapes.length > 1 && (
         <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4" role="tablist" aria-label="Variante de poziție">
@@ -38,7 +42,11 @@ export function ChordDetailPage() {
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="card flex flex-col items-center gap-3 py-6">
-          <ChordDiagram key={shapeIndex} chord={ch} shapeIndex={shapeIndex} playable hideName showNotes maxWidth={260} className="w-full" />
+          {settings.chordView === '3d' ? (
+            <Guitar3D chord={ch} shapeIndex={shapeIndex} height={340} className="w-full" />
+          ) : (
+            <ChordDiagram key={shapeIndex} chord={ch} shapeIndex={shapeIndex} playable hideName showNotes maxWidth={260} className="w-full" />
+          )}
           <FingerLegend />
         </div>
 

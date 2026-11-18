@@ -9,6 +9,9 @@ import { PROGRESSIONS } from '../music/progressions'
 import { usePlayAlong, type SeqItem } from '../hooks/usePlayAlong'
 import { ChordDiagram } from './ChordDiagram'
 import { Icon } from './Icon'
+import { ViewToggle } from './ChordViews'
+import { Guitar3D } from './three/Guitar3D'
+import { useSettings } from '../store/settings'
 
 export function ProgressionPlayer({
   items: fixedItems,
@@ -31,6 +34,8 @@ export function ProgressionPlayer({
   const [strumId, setStrumId] = useState('jos-4')
   const [pickId, setPickId] = useState('pima')
   const [metronome, setMetronome] = useState(false)
+  const { settings } = useSettings()
+  const is3d = settings.chordView === '3d'
   const strumPattern = STRUM_PATTERNS.find((p) => p.id === strumId)!
   const pickPattern = PICK_PATTERNS.find((p) => p.id === pickId)!
 
@@ -80,17 +85,30 @@ export function ProgressionPlayer({
         ))}
       </div>
 
-      {/* acordul curent și următorul */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl bg-primary-soft p-2">
-          <div className="text-center text-xs font-extrabold tracking-wider text-primary uppercase">Acum</div>
-          <ChordDiagram key={`c${cur}-${items[cur]?.chord}`} chord={items[cur]?.chord ?? 'C'} still={player.running} />
-        </div>
-        <div className="rounded-2xl bg-surface-2 p-2 opacity-80">
-          <div className="text-center text-xs font-extrabold tracking-wider text-muted uppercase">Urmează</div>
-          <ChordDiagram chord={items[next]?.chord ?? 'C'} still />
-        </div>
+      {/* acordul curent și următorul: diagrame 2D sau chitara 3D (degetele se mută animat la fiecare schimbare) */}
+      <div className="mb-2 flex justify-end">
+        <ViewToggle />
       </div>
+      {is3d ? (
+        <div>
+          <Guitar3D chord={items[cur]?.chord ?? 'C'} height={300} />
+          <div className="mt-2 flex items-center justify-center gap-2 text-sm font-bold text-muted">
+            Acum <span className="rounded-lg bg-primary px-2 py-0.5 text-primary-ink">{items[cur]?.chord}</span> · urmează{' '}
+            <span className="rounded-lg bg-surface-2 px-2 py-0.5 text-ink">{items[next]?.chord}</span>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-2xl bg-primary-soft p-2">
+            <div className="text-center text-xs font-extrabold tracking-wider text-primary uppercase">Acum</div>
+            <ChordDiagram key={`c${cur}-${items[cur]?.chord}`} chord={items[cur]?.chord ?? 'C'} still={player.running} />
+          </div>
+          <div className="rounded-2xl bg-surface-2 p-2 opacity-80">
+            <div className="text-center text-xs font-extrabold tracking-wider text-muted uppercase">Urmează</div>
+            <ChordDiagram chord={items[next]?.chord ?? 'C'} still />
+          </div>
+        </div>
+      )}
 
       {/* timpii măsurii */}
       <div className="my-3 flex justify-center gap-2" aria-hidden>

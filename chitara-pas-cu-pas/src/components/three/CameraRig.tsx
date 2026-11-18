@@ -63,7 +63,7 @@ export function CameraRig({
     // distanța la care lățimea dorită umple ecranul (ținând cont că pe telefon ecranul e îngust)
     const cam = camera as THREE.PerspectiveCamera
     const halfTan = Math.tan(d2r(cam.fov / 2))
-    const fitWidth = close ? Math.max(focus.width, 20) * (view === 'player' ? 1.05 : 1) : def.fitWidth
+    const fitWidth = close ? Math.max(focus.width, 17) * (view === 'player' ? 0.95 : 1) : def.fitWidth
     const distance = Math.max(fitWidth / 2 / (halfTan * Math.max(0.5, size.width / size.height)), 16)
     const toCam = f.clone().add(new THREE.Vector3(0, 0, distance))
     center.current.copy(new THREE.Vector3(32 * (mirror ? -1 : 1), 0, 0).applyQuaternion(toQ))

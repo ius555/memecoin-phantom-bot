@@ -14,6 +14,8 @@ export interface Settings {
   showNoteNames: boolean
   /** Durata rutinei zilnice preferate (minute) */
   routineMinutes: 10 | 20 | 30
+  /** Cum se afișează acordurile: diagramă 2D sau simulator 3D */
+  chordView: '2d' | '3d'
 }
 
 const KEY = 'cpp.settings'
@@ -23,6 +25,7 @@ const DEFAULTS: Settings = {
   volume: 0.8,
   showNoteNames: true,
   routineMinutes: 10,
+  chordView: '2d',
 }
 
 interface Ctx {
