@@ -164,7 +164,7 @@ export function Strings({ onPluck }: { onPluck?: (s: number) => void }) {
             onPointerOver={() => (document.body.style.cursor = 'pointer')}
             onPointerOut={() => (document.body.style.cursor = '')}
           >
-            <boxGeometry args={[len, 0.9, 0.62]} />
+            <boxGeometry args={[len, 1.2, 0.92]} />
             <meshBasicMaterial visible={false} />
           </mesh>
         )

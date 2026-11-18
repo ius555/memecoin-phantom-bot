@@ -15,6 +15,8 @@ import { GuitarModel } from './GuitarModel'
 import { Strings } from './Strings'
 import { CameraRig } from './CameraRig'
 import { Fingers } from './Fingers'
+import { Pick } from './Pick'
+import { STRUM_X } from './geometry'
 import type { ChordShape } from '../../music/chords'
 import type { ViewId } from './views'
 import { useState } from 'react'
@@ -30,6 +32,8 @@ export interface GuitarSceneProps {
   view: ViewId
   viewKey: number
   mirror: boolean
+  /** când se cântă un ritm, camera cuprinde și zona unde lovește pana */
+  strumming?: boolean
   /** randăm doar când simulatorul e vizibil */
   active: boolean
   onPluck?: (stringIndex: number) => void
@@ -39,9 +43,16 @@ export interface GuitarSceneProps {
   onContextLost?: () => void
 }
 
-export default function GuitarScene({ shape, replayKey, themeKey, view, viewKey, mirror, active, onPluck, onPerformanceFail, onContextLost }: GuitarSceneProps) {
+export default function GuitarScene({ strumming = false, shape, replayKey, themeKey, view, viewKey, mirror, active, onPluck, onPerformanceFail, onContextLost }: GuitarSceneProps) {
   const model = useRef<THREE.Group>(null)
-  const focus = useMemo(() => chordFocus(shape), [shape])
+  const focus = useMemo(() => {
+    const f = chordFocus(shape)
+    if (!strumming) return f
+    // includem și gura chitarei, unde trece pana
+    const x0 = f.x - f.width / 2
+    const x1 = STRUM_X + 5
+    return { x: (x0 + x1) / 2, width: (x1 - x0) * 1.02 }
+  }, [shape, strumming])
   const [dpr, setDpr] = useState(() => Math.min(1.75, window.devicePixelRatio || 1))
 
   return (
@@ -70,6 +81,7 @@ export default function GuitarScene({ shape, replayKey, themeKey, view, viewKey,
         <group scale={[mirror ? -1 : 1, 1, 1]}>
           <GuitarModel />
           <Strings onPluck={onPluck} />
+          <Pick />
           <Fingers shape={shape} replayKey={replayKey} themeKey={themeKey} view={view} mirror={mirror} />
         </group>
       </group>

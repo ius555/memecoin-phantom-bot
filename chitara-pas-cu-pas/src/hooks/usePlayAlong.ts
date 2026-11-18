@@ -9,6 +9,7 @@ import { useMemo } from 'react'
 import { useClock } from './useClock'
 import { strum, playNote, muteAll } from '../audio/guitar'
 import { click } from '../audio/clicks'
+import { emitGuitarEvent } from '../audio/events'
 import { chordFrets, getChord } from '../music/chords'
 import type { StrumPattern } from '../music/strumming'
 import { slotStrings, type PickPattern } from '../music/fingerpicking'
@@ -70,7 +71,11 @@ export function usePlayAlong(opts: {
       if (!getChord(name)) return
       if (mode.kind === 'strum') {
         const sym = mode.pattern.slots[slot % mode.pattern.slots.length]
-        if (sym === '-') return
+        if (sym === '-') {
+          // mâna continuă pendulul fără să atingă corzile – anunțăm doar pentru animație
+          emitGuitarEvent({ type: 'strum', direction: slot % 2 === 0 ? 'down' : 'up', strings: [], when: time, spread: 0.016, ghost: true })
+          return
+        }
         const accent = slot % (mode.pattern.beats * 2) === 0
         strum(chordFrets(name), {
           when: time,

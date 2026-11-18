@@ -8,7 +8,15 @@
  */
 export type GuitarEvent =
   | { type: 'note'; string: number; fret: number; when: number; velocity: number }
-  | { type: 'strum'; direction: 'down' | 'up'; strings: number[]; when: number; spread: number }
+  | {
+      type: 'strum'
+      direction: 'down' | 'up'
+      strings: number[]
+      when: number
+      spread: number
+      /** mâna trece pe lângă corzi fără să le lovească (sloturile „-” din modelele de strumming) */
+      ghost?: boolean
+    }
 
 type Listener = (e: GuitarEvent) => void
 const listeners = new Set<Listener>()
