@@ -92,6 +92,18 @@ Folderul `dist/` e un site static: îl poți publica pe orice hosting (GitHub Pa
 Cloudflare Pages...). Aplicația folosește rute cu `#` și căi relative, deci merge și dintr-un subfolder,
 fără configurare de server. Service worker-ul (`public/sw.js`) păstrează aplicația pentru folosire offline.
 
+### Publicare pe GitHub Pages (gratuit, https)
+
+Aplicația publicată se află în folderul `docs/` de la rădăcina repo-ului și e servită de GitHub Pages
+(Settings → Pages → „Deploy from a branch”, folderul `/docs`). După orice modificare:
+
+```bash
+npm run build:pages    # reconstruiește aplicația în ../docs
+git add ../docs && git commit -m "Actualizare site" && git push
+```
+
+GitHub republică site-ul automat în ~1 minut după push.
+
 ### Totul într-un singur fișier HTML
 
 ```bash

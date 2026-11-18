@@ -9,7 +9,8 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",
-    "build:single": "tsc -b && vite build --config vite.single.config.ts"
+    "build:single": "tsc -b && vite build --config vite.single.config.ts",
+    "build:pages": "tsc -b && vite build --outDir ../docs --emptyOutDir"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",

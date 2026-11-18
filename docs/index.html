@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ro">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Învață chitara de la zero, pas cu pas, în limba română." />
+    <meta name="theme-color" content="#3f6b4a" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+    <link rel="apple-touch-icon" href="./icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Chitara" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <title>Chitara Pas cu Pas</title>
+    <script>
+      // Aplicăm tema înainte de randare, ca să nu "clipească" ecranul
+      try {
+        var s = JSON.parse(localStorage.getItem('cpp.settings') || '{}');
+        var host = document.documentElement.getAttribute('data-theme');
+        var dark = s.theme === 'dark' || (s.theme !== 'light' && (host ? host === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches));
+        if (dark) document.documentElement.classList.add('dark');
+      } catch (e) {}
+    </script>
+    <script type="module" crossorigin src="./assets/index-D9lyUMQp.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BdH2317r.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
