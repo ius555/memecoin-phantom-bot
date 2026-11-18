@@ -22,7 +22,7 @@ createRoot(document.getElementById('root')!).render(
 )
 
 // Service worker (doar în build-ul de producție): aplicația merge offline și se poate instala pe telefon
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
+if ('serviceWorker' in navigator && import.meta.env.PROD && import.meta.env.MODE !== 'single') {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').catch(() => {})
   })

@@ -92,6 +92,16 @@ Folderul `dist/` e un site static: îl poți publica pe orice hosting (GitHub Pa
 Cloudflare Pages...). Aplicația folosește rute cu `#` și căi relative, deci merge și dintr-un subfolder,
 fără configurare de server. Service worker-ul (`public/sw.js`) păstrează aplicația pentru folosire offline.
 
+### Totul într-un singur fișier HTML
+
+```bash
+npm run build:single   # → dist-single/index.html (~1,5 MB, tot codul inclus, și partea 3D)
+```
+
+Fișierul se deschide direct în browser (dublu-clic), fără server și fără internet (doar fonturile se
+descarcă, dacă e conexiune). Nu are service worker și nu se instalează ca aplicație; microfonul merge doar
+dacă browserul îl permite pentru fișiere locale.
+
 ### Instalare pe telefon (PWA)
 
 Deschide site-ul publicat (https) în Chrome (Android) sau Safari (iPhone):

@@ -36,18 +36,29 @@ interface Ctx {
 
 const SettingsContext = createContext<Ctx | null>(null)
 
+/** Tema „automată”: atributul data-theme al paginii (dacă există), altfel tema sistemului. */
+function readSystemDark(): boolean {
+  if (typeof document === 'undefined') return false
+  const host = document.documentElement.getAttribute('data-theme')
+  if (host === 'dark' || host === 'light') return host === 'dark'
+  return typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: dark)').matches
+}
+
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(() => loadJSON(KEY, DEFAULTS))
-  const [systemDark, setSystemDark] = useState(
-    () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: dark)').matches,
-  )
+  const [systemDark, setSystemDark] = useState(readSystemDark)
 
-  // urmărim tema sistemului
+  // urmărim tema sistemului (și tema paginii gazdă, dacă aplicația e afișată într-un cadru care o setează)
   useEffect(() => {
     const mq = matchMedia('(prefers-color-scheme: dark)')
-    const onChange = () => setSystemDark(mq.matches)
+    const onChange = () => setSystemDark(readSystemDark())
     mq.addEventListener('change', onChange)
-    return () => mq.removeEventListener('change', onChange)
+    const mo = new MutationObserver(onChange)
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => {
+      mq.removeEventListener('change', onChange)
+      mo.disconnect()
+    }
   }, [])
 
   const isDark = settings.theme === 'dark' || (settings.theme === 'system' && systemDark)

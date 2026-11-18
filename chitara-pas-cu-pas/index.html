@@ -18,7 +18,8 @@
       // Aplicăm tema înainte de randare, ca să nu "clipească" ecranul
       try {
         var s = JSON.parse(localStorage.getItem('cpp.settings') || '{}');
-        var dark = s.theme === 'dark' || (s.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+        var host = document.documentElement.getAttribute('data-theme');
+        var dark = s.theme === 'dark' || (s.theme !== 'light' && (host ? host === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches));
         if (dark) document.documentElement.classList.add('dark');
       } catch (e) {}
     </script>
