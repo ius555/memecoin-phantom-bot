@@ -7,6 +7,8 @@ import { PracticePage } from './pages/PracticePage'
 import { ProfilePage } from './pages/ProfilePage'
 import { TipsPage } from './pages/TipsPage'
 import { RoutinePage } from './pages/RoutinePage'
+import { ChordsPage } from './pages/ChordsPage'
+import { ChordDetailPage } from './pages/ChordDetailPage'
 import { ComingSoon } from './pages/ComingSoon'
 
 /**
@@ -29,7 +31,8 @@ export default function App() {
           <Route path="exersare/joc" element={<ComingSoon title="Jocul schimbărilor" />} />
           <Route path="exersare/auz" element={<ComingSoon title="Test de auz" />} />
           <Route path="exersare/recunoastere" element={<ComingSoon title="Verifică acordul" />} />
-          <Route path="acorduri" element={<ComingSoon title="Biblioteca de acorduri" />} />
+          <Route path="acorduri" element={<ChordsPage />} />
+          <Route path="acorduri/:name" element={<ChordDetailPage />} />
           <Route path="cantece" element={<ComingSoon title="Cântece" />} />
           <Route path="rutina" element={<RoutinePage />} />
           <Route path="sfaturi" element={<TipsPage />} />
