@@ -12,13 +12,11 @@ import { midiAt, midiToFreq } from '../music/theory'
 
 const cache = new Map<string, { buffer: AudioBuffer; rate: number }>()
 
-/** Generează sunetul unei coarde ciupite. `bright` 0..1 = cât de "metalic" sună. */
-function pluckBuffer(ctx: BaseAudioContext, freq: number, bright = 0.5) {
-  const key = `${freq.toFixed(2)}|${bright.toFixed(2)}`
-  const hit = cache.get(key)
-  if (hit) return hit
-
-  const sr = ctx.sampleRate
+/**
+ * Generează eșantioanele unei coarde ciupite (funcție pură, testabilă fără browser).
+ * Returnează datele și `rate` = playbackRate-ul care corectează înălțimea exactă.
+ */
+export function synthPluck(sr: number, freq: number, bright = 0.5, random: () => number = Math.random) {
   const period = Math.max(2, Math.floor(sr / freq))
   // corzile grave țin mai mult decât cele acute
   const t60 = 1.6 + 2.4 * Math.max(0, Math.min(1, (400 - freq) / 320))
@@ -30,7 +28,7 @@ function pluckBuffer(ctx: BaseAudioContext, freq: number, bright = 0.5) {
   let prev = 0
   const smooth = 0.15 + (1 - bright) * 0.6
   for (let i = 0; i < period; i++) {
-    const noise = Math.random() * 2 - 1
+    const noise = random() * 2 - 1
     prev = prev * smooth + noise * (1 - smooth)
     data[i] = prev
   }
@@ -40,10 +38,12 @@ function pluckBuffer(ctx: BaseAudioContext, freq: number, bright = 0.5) {
   mean /= period
   for (let i = 0; i < period; i++) data[i] -= mean
 
-  // pierderea pe fiecare perioadă, ca amplitudinea să scadă la 0.001 după t60 secunde
+  // bucla Karplus-Strong: media a două eșantioane consecutive de acum o perioadă,
+  // cu o pierdere calculată ca amplitudinea să scadă la 0.001 după t60 secunde
   const g = Math.pow(0.001, 1 / (t60 * freq))
-  for (let i = period; i < length; i++) {
-    data[i] = g * 0.5 * (data[i - period] + data[i - period - 1 >= 0 ? i - period - 1 : 0])
+  data[period] = g * 0.5 * data[0]
+  for (let i = period + 1; i < length; i++) {
+    data[i] = g * 0.5 * (data[i - period] + data[i - period - 1])
   }
   // fade-out la final ca să nu "pocnească"
   const fade = Math.floor(sr * 0.08)
@@ -54,10 +54,19 @@ function pluckBuffer(ctx: BaseAudioContext, freq: number, bright = 0.5) {
   for (let i = 0; i < length; i++) peak = Math.max(peak, Math.abs(data[i]))
   if (peak > 0) for (let i = 0; i < length; i++) data[i] /= peak
 
-  const buffer = ctx.createBuffer(1, length, sr)
-  buffer.copyToChannel(data, 0)
   // bucla are de fapt perioada (period + 0.5) eșantioane → corectăm înălțimea prin playbackRate
   const rate = freq / (sr / (period + 0.5))
+  return { data, rate }
+}
+
+/** Bufferul audio pentru o frecvență (din cache dacă există). */
+function pluckBuffer(ctx: BaseAudioContext, freq: number, bright = 0.5) {
+  const key = `${freq.toFixed(2)}|${bright.toFixed(2)}`
+  const hit = cache.get(key)
+  if (hit) return hit
+  const { data, rate } = synthPluck(ctx.sampleRate, freq, bright)
+  const buffer = ctx.createBuffer(1, data.length, ctx.sampleRate)
+  buffer.copyToChannel(data, 0)
   const result = { buffer, rate }
   cache.set(key, result)
   return result
