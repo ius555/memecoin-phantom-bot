@@ -29,6 +29,8 @@ interface Props {
   className?: string
   /** lățimea maximă în pixeli */
   maxWidth?: number
+  /** evidențiază o zonă a diagramei (folosit în lecția despre citirea diagramelor) */
+  highlight?: 'strings' | 'frets' | 'dots' | 'top'
 }
 
 const W = 132
@@ -37,7 +39,7 @@ const GAP = 17.6 // distanța dintre corzi
 const TOP = 34
 const FRET_H = 22
 
-export function ChordDiagram({ chord, shapeIndex = 0, playable, hideName, showNotes, still, className = '', maxWidth = 180 }: Props) {
+export function ChordDiagram({ chord, shapeIndex = 0, playable, hideName, showNotes, still, className = '', maxWidth = 180, highlight }: Props) {
   const ch = typeof chord === 'string' ? getChord(chord) : chord
   const { settings } = useSettings()
   // la fiecare redare creștem cheia ca animațiile să repornească
@@ -66,6 +68,28 @@ export function ChordDiagram({ chord, shapeIndex = 0, playable, hideName, showNo
     .map((f, i) => ({ i, f, finger: s.fingers[i] }))
     .filter((d) => d.f !== null && d.f > 0 && !barreFingers.has(d.finger))
   const order = (finger: number) => (still ? 0 : finger * 160)
+
+  function HighlightBox({ kind }: { kind: NonNullable<Props['highlight']> }) {
+    let x1 = LEFT - 9
+    let x2 = LEFT + GAP * 5 + 9
+    let y1 = TOP - 2
+    let y2 = TOP + rows * FRET_H + 2
+    if (kind === 'frets') {
+      y1 = TOP - 9
+      y2 = TOP + FRET_H * 2 + 4
+    } else if (kind === 'top') {
+      y1 = TOP - 23
+      y2 = TOP - 2
+    } else if (kind === 'dots') {
+      const xs = dots.map((d) => sx(d.i))
+      const ys = dots.map((d) => fy(d.f as number))
+      x1 = Math.min(...xs) - 11
+      x2 = Math.max(...xs) + 11
+      y1 = Math.min(...ys) - 11
+      y2 = Math.max(...ys) + 11
+    }
+    return <rect x={x1} y={y1} width={x2 - x1} height={y2 - y1} rx={7} fill="none" stroke="var(--wood)" strokeWidth={3} strokeDasharray="6 4" />
+  }
 
   function play(mode: 'strum' | 'arp' = 'strum') {
     if (mode === 'strum') strum(s.frets)
@@ -143,6 +167,8 @@ export function ChordDiagram({ chord, shapeIndex = 0, playable, hideName, showNo
           </text>
         </g>
       ))}
+      {/* zona evidențiată */}
+      {highlight && <HighlightBox kind={highlight} />}
       {/* notele sub corzi */}
       {showNotes &&
         notes.map((n, i) => (

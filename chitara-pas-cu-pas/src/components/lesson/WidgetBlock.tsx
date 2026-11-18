@@ -1,11 +1,23 @@
 import type { ComponentType } from 'react'
 import type { WidgetName } from '../../data/lessons/types'
+import { GuitarAnatomy } from '../widgets/GuitarAnatomy'
+import { Posture } from '../widgets/Posture'
+import { StringsWidget, FingersWidget } from '../widgets/StringsAndFingers'
+import { ChordReading, TabReading } from '../widgets/Reading'
 
 /**
  * Registrul widget-urilor interactive folosite în lecții.
  * Pentru un widget nou: creează componenta și adaug-o aici.
  */
-const WIDGETS: Partial<Record<WidgetName, ComponentType<Record<string, unknown>>>> = {}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const WIDGETS: Partial<Record<WidgetName, ComponentType<any>>> = {
+  anatomy: GuitarAnatomy,
+  posture: Posture,
+  strings: StringsWidget,
+  fingers: FingersWidget,
+  chordReading: ChordReading,
+  tabReading: TabReading,
+}
 
 export function WidgetBlock({ name, props }: { name: WidgetName; props?: Record<string, unknown> }) {
   const W = WIDGETS[name]
