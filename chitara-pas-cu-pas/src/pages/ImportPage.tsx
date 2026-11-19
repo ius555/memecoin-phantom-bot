@@ -23,15 +23,11 @@ import { STRUM_PATTERNS } from '../music/strumming'
 import { usePlayAlong } from '../hooks/usePlayAlong'
 import { loadJSON, saveJSON } from '../store/storage'
 
-const ROOT_PC: Record<string, number> = { C: 0, 'C#': 1, Db: 1, D: 2, Eb: 3, 'D#': 3, E: 4, F: 5, 'F#': 6, Gb: 6, G: 7, Ab: 8, 'G#': 8, A: 9, Bb: 10, 'A#': 10, B: 11 }
-
-/** O culoare vie pentru fiecare fundamentală (aceeași notă = aceeași culoare peste tot). */
+/** Culoarea unui acord în bandă: alb-negru – majorele gri închis, minorele gri mediu. */
 export function chordColor(name: string): string {
-  const m = name.match(/^([A-G][#b]?)/)
-  if (!m || name === 'N') return 'var(--surface-2)'
-  const pc = ROOT_PC[m[1]] ?? 0
-  const minor = /^[A-G][#b]?m(?!aj)/.test(name)
-  return `hsl(${(pc * 30 + 340) % 360} ${minor ? 62 : 74}% ${minor ? 42 : 52}%)`
+  if (!name || name === 'N') return 'var(--surface-2)'
+  const minor = /^[A-H][#b]?m(?!aj)/.test(name)
+  return minor ? '#5b5b5b' : '#1e1e1e'
 }
 
 const fmt = (t: number) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`
@@ -220,8 +216,8 @@ function AudioImport() {
                   key={i}
                   data-i={i}
                   onClick={() => seek(s.start + 0.01)}
-                  className={`flex h-12 shrink-0 flex-col items-center justify-center rounded-lg px-1 text-sm font-extrabold text-white transition ${
-                    i === idx ? 'scale-105 ring-4 ring-ink/20' : 'opacity-85'
+                  className={`flex h-12 shrink-0 flex-col items-center justify-center rounded-lg border border-white/10 px-1 text-sm font-extrabold text-white transition ${
+                    i === idx ? 'scale-105 ring-4 ring-ink/40' : 'opacity-80'
                   }`}
                   style={{ width: Math.max(38, Math.min(140, (s.end - s.start) * 22)), background: s.chord === 'N' ? 'var(--line)' : chordColor(transposeChord(s.chord, -capo)) }}
                   title={`${fmt(s.start)} – ${s.chord === 'N' ? 'fără acord' : transposeChord(s.chord, -capo)}`}

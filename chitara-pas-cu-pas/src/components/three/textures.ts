@@ -94,7 +94,7 @@ export function rosette() {
       ring(200, 252, '#f3e6cf')
       ring(204, 248, '#2a1a10')
       // mozaic: segmente mici colorate, în 2 rânduri
-      const colors = ['#1fb5a8', '#ff6b5b', '#f3e6cf', '#7c5cff', '#ffb547', '#f3e6cf']
+      const colors = ['#1a1a1a', '#f3e6cf', '#7a4a2a', '#f3e6cf', '#2a2a2a', '#c49a6c']
       for (let row = 0; row < 2; row++) {
         const r0 = 210 + row * 18
         const r1 = r0 + 16

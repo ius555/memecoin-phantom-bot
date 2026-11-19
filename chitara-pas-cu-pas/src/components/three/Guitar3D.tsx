@@ -31,7 +31,7 @@ export interface Guitar3DProps {
   strumming?: boolean
 }
 
-type FailReason = 'no-webgl' | 'weak' | 'slow' | 'error'
+type FailReason = 'no-webgl' | 'error'
 
 /** Prinde erorile din scena 3D (ex. WebGL refuzat) și trece la 2D, păstrând mesajul tehnic. */
 class SceneBoundary extends Component<{ onError: (message: string) => void; children: ReactNode }, { failed: boolean }> {
@@ -51,10 +51,8 @@ export function Guitar3D({ chord, shapeIndex = 0, height = 340, initialView = 'p
   const { settings, isDark } = useSettings()
   const [view, setView] = useState<ViewId>(initialView)
   const [viewKey, setViewKey] = useState(0)
-  const [fail, setFail] = useState<FailReason | null>(() => {
-    const s = check3DSupport()
-    return s.ok ? null : s.reason
-  })
+  const support = check3DSupport()
+  const [fail, setFail] = useState<FailReason | null>(() => (support.ok ? null : support.reason))
   const [detail, setDetail] = useState<string | null>(null)
   // la pierderea contextului WebGL (des pe telefon, când treci prin alte aplicații) reconstruim scena
   const [sceneKey, setSceneKey] = useState(0)
@@ -125,7 +123,7 @@ export function Guitar3D({ chord, shapeIndex = 0, height = 340, initialView = 'p
         {ch && <ChordDiagram chord={ch} shapeIndex={shapeIndex} playable showNotes />}
         {fail !== 'no-webgl' && (
           <button className="btn-ghost" onClick={retry}>
-            {fail === 'weak' ? 'Încearcă totuși 3D' : 'Încearcă din nou 3D'}
+            Încearcă din nou 3D
           </button>
         )}
       </div>
@@ -158,7 +156,7 @@ export function Guitar3D({ chord, shapeIndex = 0, height = 340, initialView = 'p
                 mirror={settings.leftHanded}
                 active={visible}
                 onPluck={pluck}
-                onPerformanceFail={() => setFail('slow')}
+                lowQuality={support.ok && support.low}
                 onContextLost={contextLost}
               />
             </Suspense>

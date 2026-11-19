@@ -14,6 +14,7 @@ const TOOLS = [
   { to: '/exersare/recunoastere', icon: '🎤', title: 'Verifică acordul', text: 'Cântă un acord, aplicația îți spune dacă e corect' },
   { to: '/cantece', icon: '🎶', title: 'Cântece', text: 'Cântece populare și compoziții originale' },
   { to: '/sfaturi', icon: '💡', title: 'Sfaturi', text: 'Degete care dor, corzi care bâzâie...' },
+  { to: '/profil', icon: '👤', title: 'Profil și setări', text: 'XP, insigne, temă, mod stângaci' },
 ]
 
 // fundaluri colorate, pe rând, pentru iconițele uneltelor

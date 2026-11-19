@@ -1,8 +1,9 @@
 /**
- * Degetele pe modelul 3D: degete stilizate (nu mâini realiste) – câte un tub colorat care vine de sub
- * marginea grifului (partea corzilor subțiri, unde e palma), se arcuiește și apasă cu VÂRFUL pe coardă,
- * exact cum trebuie ținut degetul. La barré, arătătorul stă culcat peste corzi.
- * Culorile și cifrele (1–4) sunt aceleași ca în diagramele 2D. „X” / „O” deasupra corzilor.
+ * Degetele pe modelul 3D: degete cu aspect realist (piele, încheieturi, unghii), construite procedural,
+ * care vin de sub grif (pe partea corzilor subțiri, unde e palma), se arcuiesc și apasă cu VÂRFUL
+ * pe coardă – exact cum trebuie ținut degetul. La barré, arătătorul stă culcat peste corzi.
+ * Lângă fiecare vârf, un mic semn cu cifra (1–4) în culoarea degetului din diagramele 2D.
+ * „X” / „O” deasupra corzilor.
  *
  * Animații:
  * - la apariție, degetele CAD pe rând pe poziție (cu o mică săritură)
@@ -19,65 +20,137 @@ import { coloredMaterial, cssColor } from './materials'
 import { crossMark, numberBadge, openMark, plainText } from './labels'
 import type { ViewId } from './views'
 
-const FALLBACK_COLORS = ['#7a6a58', '#3f9a5a', '#2f7fc1', '#d77a22', '#a24c8f']
-const FINGER_R = 0.4
+const FALLBACK_COLORS = ['#7a6a58', '#10b981', '#3b82f6', '#f97316', '#d946ef']
+/** culoarea pielii și a unghiilor */
+const SKIN = '#e2ab88'
+const NAIL = '#f3d9ce'
+
+const gauss = (t: number, mu: number, w: number) => Math.exp(-((t - mu) * (t - mu)) / (2 * w * w))
 
 /**
- * Forma degetului, în coordonate relative la vârf (vârful e în origine).
- * Degetul vine de sub marginea dinspre coarda 1 (−z), urcă în arc și coboară vertical pe coardă.
+ * Tub cu grosime variabilă de-a lungul unei curbe (pentru un deget: gros la bază, mai subțire spre vârf,
+ * cu încheieturile puțin îngroșate). Three.js are doar tuburi cu grosime constantă, așa că îl construim.
  */
-function fingerGeometry(t: FingerTarget): { geo: THREE.BufferGeometry; tip: THREE.Vector3; label: THREE.Vector3 } {
+function taperedTube(curve: THREE.Curve<THREE.Vector3>, radius: (t: number) => number, tubular = 36, radial = 14): THREE.BufferGeometry {
+  const frames = curve.computeFrenetFrames(tubular, false)
+  const pos: number[] = []
+  const nor: number[] = []
+  const idx: number[] = []
+  const P = new THREE.Vector3()
+  const n = new THREE.Vector3()
+  for (let i = 0; i <= tubular; i++) {
+    const t = i / tubular
+    curve.getPointAt(t, P)
+    const r = radius(t)
+    for (let j = 0; j <= radial; j++) {
+      const v = (j / radial) * Math.PI * 2
+      n.copy(frames.normals[i]).multiplyScalar(Math.cos(v)).addScaledVector(frames.binormals[i], Math.sin(v)).normalize()
+      pos.push(P.x + n.x * r, P.y + n.y * r, P.z + n.z * r)
+      nor.push(n.x, n.y, n.z)
+    }
+  }
+  for (let i = 0; i < tubular; i++)
+    for (let j = 0; j < radial; j++) {
+      const a = i * (radial + 1) + j
+      const b = a + radial + 1
+      idx.push(a, b, a + 1, b, b + 1, a + 1)
+    }
+  const g = new THREE.BufferGeometry()
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3))
+  g.setIndex(idx)
+  return g
+}
+
+/** Grosimea relativă a fiecărui deget (arătătorul și mijlociul mai groase, degetul mic mai subțire). */
+const FINGER_SCALE = [1, 1, 1.04, 0.96, 0.84]
+
+interface FingerShape {
+  skin: THREE.BufferGeometry
+  nail: THREE.BufferGeometry
+  label: THREE.Vector3
+}
+
+/**
+ * Forma unui deget, în coordonate relative la vârf (vârful e în origine).
+ * Degetul pornește din palmă, de sub marginea grifului dinspre coarda 1 (−z), urcă în arc
+ * (articulațiile) și coboară aproape vertical, apăsând cu VÂRFUL pe coardă. La barré stă culcat peste corzi.
+ */
+function fingerGeometry(t: FingerTarget): FingerShape {
   const edge = -neckWidth(t.x) / 2 // marginea grifului dinspre coarda 1
-  const r = t.finger === 1 ? FINGER_R * 1.08 : t.finger === 4 ? FINGER_R * 0.88 : FINGER_R
+  const k = FINGER_SCALE[t.finger] ?? 1
   let pts: THREE.Vector3[]
-  let tip: THREE.Vector3
-  let label: THREE.Vector3
   if (t.barre) {
-    // degetul culcat peste corzi: de la marginea de jos până dincolo de ultima coardă acoperită
     const zT = -t.width / 2
     const zB = t.width / 2
     const d = edge - (t.z + zT)
     pts = [
-      new THREE.Vector3(-0.3, -3.3, zT + d - 1.5),
-      new THREE.Vector3(-0.2, -0.7, zT + d - 0.7),
-      new THREE.Vector3(-0.1, 0.12, zT + d - 0.05),
-      new THREE.Vector3(0, 0.1, (zT + zB) / 2),
-      new THREE.Vector3(0, 0.1, zB + 0.2),
+      new THREE.Vector3(-0.3, -3.5, zT + d - 1.6),
+      new THREE.Vector3(-0.2, -1.0, zT + d - 0.75),
+      new THREE.Vector3(-0.1, 0.06, zT + d - 0.05),
+      new THREE.Vector3(0, 0.02, (zT + zB) / 2),
+      new THREE.Vector3(0, 0.02, zB + 0.1),
     ]
-    tip = pts[pts.length - 1]
-    label = new THREE.Vector3(0, 0.75, 0)
   } else {
     const d = edge - t.z
     pts = [
-      new THREE.Vector3(-0.45, -3.4, d - 1.5),
-      new THREE.Vector3(-0.35, -0.6, d - 0.8),
-      new THREE.Vector3(-0.22, 1.45, d * 0.5 - 0.2),
-      new THREE.Vector3(-0.06, 1.15, -0.12),
-      new THREE.Vector3(0, 0.1, 0),
+      new THREE.Vector3(-0.45, -3.6, d - 1.6),
+      new THREE.Vector3(-0.38, -1.0, d - 0.9),
+      new THREE.Vector3(-0.25, 1.35, d * 0.55 - 0.25), // articulația din mijloc, cea mai sus
+      new THREE.Vector3(-0.08, 1.2, -0.1),
+      new THREE.Vector3(0, 0.12, 0),
     ]
-    tip = pts[pts.length - 1]
-    label = new THREE.Vector3(0, 2.25, -0.05)
   }
   const curve = new THREE.CatmullRomCurve3(pts, false, 'centripetal')
-  const tube = new THREE.TubeGeometry(curve, 28, r, 10, false)
-  const cap = new THREE.SphereGeometry(r, 12, 8)
-  cap.translate(tip.x, tip.y, tip.z)
-  // unim tubul și vârful rotunjit într-o singură geometrie
-  const merged = new THREE.BufferGeometry()
-  const parts = [tube.toNonIndexed(), cap.toNonIndexed()]
+  // profilul grosimii: bază groasă → vârf subțire, cu încheieturile puțin mai groase, vârful rotunjit
+  const radius = (u: number) => {
+    let r = (0.47 - 0.11 * u + 0.035 * gauss(u, 0.45, 0.05) + 0.03 * gauss(u, 0.74, 0.045)) * k
+    if (u > 0.9) r *= Math.sqrt(Math.max(0, 1 - ((u - 0.9) / 0.1) ** 2)) * 0.75 + 0.25
+    return r
+  }
+  const skin = taperedTube(curve, radius)
+  // vârful rotunjit (o semisferă) peste capătul tubului
+  const end = curve.getPointAt(1)
+  const tan = curve.getTangentAt(1)
+  const rTip = radius(0.9)
+  const cap = new THREE.SphereGeometry(rTip, 14, 10)
+  cap.translate(end.x - tan.x * rTip * 0.9, end.y - tan.y * rTip * 0.9, end.z - tan.z * rTip * 0.9)
+  const merged = mergeTwo(skin, cap)
+
+  // unghia: pe spatele ultimei falange (spre exteriorul arcului; la barré, în sus)
+  const along = curve.getTangentAt(0.93)
+  const ref = t.barre ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0.25, 1)
+  const dorsal = ref.sub(along.clone().multiplyScalar(ref.dot(along))).normalize()
+  const side = new THREE.Vector3().crossVectors(dorsal, along).normalize()
+  const at = curve.getPointAt(0.9)
+  const nail = new THREE.SphereGeometry(1, 14, 8)
+  const basis = new THREE.Matrix4().makeBasis(side, dorsal, along)
+  nail.applyMatrix4(new THREE.Matrix4().makeScale(rTip * 0.78, 0.07, rTip * 1.15))
+  nail.applyMatrix4(basis)
+  nail.translate(at.x + dorsal.x * radius(0.9) * 0.93, at.y + dorsal.y * radius(0.9) * 0.93, at.z + dorsal.z * radius(0.9) * 0.93)
+
+  // numărul degetului: un mic semn colorat deasupra vârfului
+  const label = t.barre ? new THREE.Vector3(0, 0.95, 0) : new THREE.Vector3(0, 2.15, 0.2)
+  return { skin: merged, nail, label }
+}
+
+/** Unește două geometrii (poziții + normale) într-una singură, ca să fie un singur apel de desenare. */
+function mergeTwo(a: THREE.BufferGeometry, b: THREE.BufferGeometry): THREE.BufferGeometry {
+  const parts = [a.index ? a.toNonIndexed() : a, b.index ? b.toNonIndexed() : b]
+  const out = new THREE.BufferGeometry()
   for (const name of ['position', 'normal']) {
     const arrays = parts.map((g) => g.getAttribute(name).array as Float32Array)
-    const all = new Float32Array(arrays.reduce((n, a) => n + a.length, 0))
+    const all = new Float32Array(arrays.reduce((n, x) => n + x.length, 0))
     let o = 0
-    for (const a of arrays) {
-      all.set(a, o)
-      o += a.length
+    for (const x of arrays) {
+      all.set(x, o)
+      o += x.length
     }
-    merged.setAttribute(name, new THREE.BufferAttribute(all, 3))
+    out.setAttribute(name, new THREE.BufferAttribute(all, 3))
   }
-  tube.dispose()
-  cap.dispose()
-  return { geo: merged, tip, label }
+  a.dispose()
+  b.dispose()
+  return out
 }
 
 const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2)
@@ -128,7 +201,8 @@ function FingerMarker({
   const anim = useRef<Anim | null>(null)
   const lastTarget = useRef<FingerTarget | null>(null)
   const lastReplay = useRef(replayKey)
-  const material = coloredMaterial(color, 0.55)
+  const skinMat = coloredMaterial(SKIN, 0.62)
+  const nailMat = coloredMaterial(NAIL, 0.22)
   const badge = numberBadge(String(target?.finger ?? lastTarget.current?.finger ?? ''), color)
 
   const key = target ? `${target.x.toFixed(2)}|${target.z.toFixed(2)}|${target.width.toFixed(2)}` : 'none'
@@ -203,7 +277,8 @@ function FingerMarker({
 
   return (
     <group ref={group} visible={false}>
-      {fingerShape && <mesh geometry={fingerShape.geo} material={material} renderOrder={3} />}
+      {fingerShape && <mesh geometry={fingerShape.skin} material={skinMat} renderOrder={3} />}
+      {fingerShape && <mesh geometry={fingerShape.nail} material={nailMat} renderOrder={3} />}
       {/* cifra degetului, deasupra vârfului, mereu vizibilă */}
       {fingerShape && (
         <mesh
@@ -212,7 +287,7 @@ function FingerMarker({
           scale={[mirror ? -1 : 1, 1, 1]}
           renderOrder={12}
         >
-          <circleGeometry args={[0.5, 20]} />
+          <circleGeometry args={[0.42, 20]} />
           <meshBasicMaterial map={badge} transparent depthTest={false} depthWrite={false} />
         </mesh>
       )}
@@ -241,7 +316,7 @@ export function Fingers({
     [themeKey],
   )
   const bad = useMemo(() => cssColor('--bad', '#c0462f'), [themeKey]) // eslint-disable-line react-hooks/exhaustive-deps
-  const ink = useMemo(() => cssColor('--accent', '#0b847c'), [themeKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  const ink = '#1f1f1f' // „O” negru pe fond alb – lizibil în ambele teme
   const muted = useMemo(() => cssColor('--muted', '#6e6152'), [themeKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ordinea în care cad degetele: după numărul degetului (ca în diagrama 2D)

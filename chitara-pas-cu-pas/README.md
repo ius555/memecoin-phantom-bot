@@ -15,12 +15,14 @@ tabletă și calculator, se poate „instala” pe ecranul telefonului și func�
   cu degetele animate, corzi care vibrează și o pană care urmează ritmul (vezi secțiunea de mai jos).
 - **Gamificare**: XP, nivel de chitarist, serie de zile consecutive (🔥), 17 insigne.
 - **Fără cont**: progresul se salvează în `localStorage`, pe dispozitiv.
-- Temă **deschisă / întunecată / automată**, în culori vii (coral, turcoaz, violet), și **mod pentru stângaci**
-  (diagramele se oglindesc).
+- Temă **deschisă / întunecată / automată**, alb-negru (culoare doar pentru degetele 1–4 și pentru
+  corect / greșit), și **mod pentru stângaci** (diagramele se oglindesc).
+- Meniul de jos: Acasă · Curs · **Melodia ta** · Simulator · Acorduri · Exersează (Profilul: butonul de sus
+  de pe pagina de start).
 
 ## Încarcă o melodie
 
-Ecranul **Cântece → Încarcă melodia ta** (și cardul de pe pagina de start), două variante:
+Butonul **„Melodia ta”** din meniul de jos (și cardurile de pe pagina de start / Cântece), două variante:
 
 1. **Fișier audio** (mp3, m4a, wav, ogg, maxim 12 minute). Fișierul nu pleacă de pe dispozitiv: e decodat
    în browser, convertit la mono 11 025 Hz, apoi analizat (`src/audio/analysis.ts`):
@@ -52,9 +54,10 @@ Ecranul **Simulator** (în meniu) și comutatorul **2D / 3D** din lecții, din B
   (`RoomEnvironment`), fără nicio descărcare.
 - **Aceleași date ca diagramele 2D**: pozițiile, degetele și barré-urile vin din `src/music/chords.ts`
   (inclusiv `findBarres`); culorile degetelor vin din aceleași variabile CSS (`--f1`…`--f4`).
-- **Degetele**: degete stilizate (tuburi colorate, cifra 1–4 deasupra) care vin de sub marginea grifului,
-  se arcuiesc și apasă cu vârful pe coardă – arată *cum* ții degetul, nu doar unde. La barré, arătătorul
-  stă culcat peste corzi. La apariție cad pe rând; la schimbarea acordului se mută în arc.
+- **Degetele**: degete cu aspect realist (piele, grosime care scade spre vârf, încheieturi, unghii),
+  construite procedural, care vin de sub grif, se arcuiesc și apasă cu vârful pe coardă – arată *cum*
+  ții degetul, nu doar unde. La barré, arătătorul stă culcat peste corzi. Lângă fiecare vârf, cifra 1–4
+  în culoarea din diagramele 2D. La apariție cad pe rând; la schimbarea acordului se mută în arc.
   „X” deasupra corzilor care nu se cântă, „O” pentru cele libere.
 - **Corzile** sunt cilindri metalici (bronz înfășurat / oțel); vibrează (modul fundamental + armonica a doua,
   calculate în shader, între tastă și căluș) și se aprind când sună. Atinge o coardă pe model ca s-o auzi.
@@ -77,13 +80,15 @@ metronom și de redarea progresiilor). Corzile și pana 3D doar ascultă și com
   simulatorul apare pe ecran** (`React.lazy`); restul aplicației rămâne la fel de rapid.
 - `frameloop="demand"`: se desenează doar când se mișcă ceva (în repaus: 0 cadre); randarea se oprește
   când simulatorul iese de pe ecran, iar după 8 s scena e demontată și contextul WebGL eliberat.
-- Piesele statice ale chitarei sunt unite pe material (~15 apeluri de desenare pentru toată chitara),
+- Piesele statice ale chitarei sunt unite pe material (~16 apeluri de desenare pentru toată chitara),
   vibrația corzilor e calculată pe placa video, fără umbre, rezoluție maximă 1,75×, fără antialiasing pe
   ecranele foarte dense. În animație: ~28 de apeluri de desenare pe cadru.
-- **Revenire automată la diagrama 2D**, cu un mesaj prietenos, dacă: browserul nu are WebGL, dispozitivul
-  e foarte slab (≤ 2 nuclee sau ≤ 2 GB RAM – cu opțiunea „Încearcă totuși 3D”), rularea e constant prea
-  lentă (PerformanceMonitor) sau partea 3D nu se poate încărca. Mesajul arată și cauza tehnică, iar
-  butonul „Încearcă din nou 3D” repornește modelul. Three.js are nevoie de **WebGL 2**.
+- **3D pe orice dispozitiv**: nu mai trecem la 2D pentru că telefonul e lent. Pe dispozitivele slabe
+  (≤ 4 nuclee sau ≤ 3 GB RAM) și când animațiile merg constant sub ~28 cadre/s, desenăm cu rezoluție 1×
+  (măsurăm doar în timpul animațiilor continue: cu randarea „la cerere”, pauzele dintre cadre sunt normale).
+  Testat cu procesorul încetinit de 6×: rămâne 3D.
+- **Revenire la diagrama 2D** doar dacă browserul nu are **WebGL 2** (Three.js are nevoie de el) sau dacă
+  scena dă o eroare; mesajul arată cauza tehnică, iar „Încearcă din nou 3D” repornește modelul.
 - **Context WebGL pierdut** (des pe telefon, când treci prin alte aplicații): scena se reconstruiește
   singură; doar dacă se întâmplă de 3 ori într-un minut se trece la 2D.
 

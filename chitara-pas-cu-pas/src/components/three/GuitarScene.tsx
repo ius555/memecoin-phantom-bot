@@ -5,13 +5,12 @@
  * - frameloop "demand": se desenează un cadru doar când se mișcă ceva (cameră, animații, sunet)
  * - "never" când simulatorul nu e pe ecran
  * - fără umbre; materiale PBR cu un mediu de lumină generat o singură dată (RoomEnvironment, fără descărcări)
- * - rezoluție limitată (dpr ≤ 1,75)
- * - PerformanceMonitor: dacă telefonul nu face față, scădem rezoluția, apoi anunțăm trecerea la 2D
+ * - rezoluție limitată (dpr ≤ 1,75); pe dispozitivele slabe sau când animația merge greu, coborâm la 1×
+ * - NU trecem niciodată la 2D din cauza vitezei: modelul rămâne 3D, doar mai simplu desenat
  */
 import { useEffect, useMemo, useRef } from 'react'
-import { Canvas, useThree } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
-import { PerformanceMonitor } from '@react-three/drei'
 import * as THREE from 'three'
 import { GuitarModel } from './GuitarModel'
 import { Strings } from './Strings'
@@ -39,13 +38,13 @@ export interface GuitarSceneProps {
   /** randăm doar când simulatorul e vizibil */
   active: boolean
   onPluck?: (stringIndex: number) => void
-  /** apelat dacă performanța e constant prea slabă */
-  onPerformanceFail?: () => void
+  /** dispozitiv slab: pornim direct cu rezoluție redusă */
+  lowQuality?: boolean
   /** apelat dacă se pierde contextul WebGL */
   onContextLost?: () => void
 }
 
-export default function GuitarScene({ strumming = false, shape, replayKey, themeKey, view, viewKey, mirror, active, onPluck, onPerformanceFail, onContextLost }: GuitarSceneProps) {
+export default function GuitarScene({ strumming = false, shape, replayKey, themeKey, view, viewKey, mirror, active, onPluck, lowQuality = false, onContextLost }: GuitarSceneProps) {
   const model = useRef<THREE.Group>(null)
   const focus = useMemo(() => {
     const f = chordFocus(shape)
@@ -56,9 +55,10 @@ export default function GuitarScene({ strumming = false, shape, replayKey, theme
     return { x: (x0 + x1) / 2, width: (x1 - x0) * 1.02 }
   }, [shape, strumming])
   // rezoluția: maxim 1,75× (pe ecranele foarte dense diferența nu se vede, dar costă mult)
-  const [dpr, setDpr] = useState(() => Math.min(1.75, window.devicePixelRatio || 1))
-  // pe ecranele dense, marginile sunt oricum fine – renunțăm la antialiasing (scump pe telefon)
-  const [antialias] = useState(() => (window.devicePixelRatio || 1) < 2)
+  const [low, setLow] = useState(lowQuality)
+  const dpr = low ? 1 : Math.min(1.75, window.devicePixelRatio || 1)
+  // pe ecranele dense (și pe dispozitivele slabe) renunțăm la antialiasing – e scump pe telefon
+  const [antialias] = useState(() => !lowQuality && (window.devicePixelRatio || 1) < 2)
 
   return (
     <Canvas
@@ -79,11 +79,7 @@ export default function GuitarScene({ strumming = false, shape, replayKey, theme
       }}
       style={{ touchAction: 'none' }}
     >
-      <PerformanceMonitor
-        flipflops={3}
-        onDecline={() => setDpr((d) => Math.max(1, d - 0.5))}
-        onFallback={() => onPerformanceFail?.()}
-      />
+      {!low && <AdaptiveQuality onSlow={() => setLow(true)} />}
       <Lighting />
       <group ref={model}>
         <group scale={[mirror ? -1 : 1, 1, 1]}>
@@ -122,4 +118,28 @@ function Lighting() {
       <directionalLight position={[-40, 10, -30]} intensity={0.5} color="#cfe3ff" />
     </>
   )
+}
+
+/**
+ * Măsoară cât durează cadrele, dar numai în timpul animațiilor continue (cadre la < 120 ms unul de altul).
+ * Cu randarea „la cerere”, pauzele dintre cadre sunt normale și nu înseamnă că telefonul e lent.
+ * Dacă animația merge constant sub ~28 cadre/s, coborâm rezoluția (o singură dată). Nu trecem la 2D.
+ */
+function AdaptiveQuality({ onSlow }: { onSlow: () => void }) {
+  const last = useRef(0)
+  const samples = useRef<number[]>([])
+  useFrame(() => {
+    const now = performance.now()
+    const dt = now - last.current
+    last.current = now
+    if (dt <= 0 || dt > 120) return
+    samples.current.push(dt)
+    if (samples.current.length >= 45) {
+      const sorted = [...samples.current].sort((a, b) => a - b)
+      const median = sorted[Math.floor(sorted.length / 2)]
+      samples.current = []
+      if (median > 36) onSlow()
+    }
+  })
+  return null
 }

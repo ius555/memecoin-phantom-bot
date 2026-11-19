@@ -6,11 +6,13 @@ import { usePracticeTracker } from '../../hooks/usePracticeTracker'
 const NAV = [
   { to: '/', label: 'Acasă', icon: 'home', end: true },
   { to: '/curs', label: 'Curs', icon: 'course' },
-  { to: '/exersare', label: 'Exersează', icon: 'practice' },
-  { to: '/acorduri', label: 'Acorduri', icon: 'chords' },
+  { to: '/cantece/import', label: 'Melodia ta', icon: 'song' },
   { to: '/simulator', label: 'Simulator', icon: 'cube' },
-  { to: '/profil', label: 'Profil', icon: 'user' },
+  { to: '/acorduri', label: 'Acorduri', icon: 'chords' },
+  { to: '/exersare', label: 'Exersează', icon: 'practice' },
 ]
+// pe ecranele late, meniul lateral arată și profilul
+const SIDE_NAV = [...NAV, { to: '/profil', label: 'Profil', icon: 'user' }]
 
 /** Scheletul aplicației: conținutul paginii + bara de navigare de jos (pe telefon) / laterală (pe desktop). */
 export function Layout() {
@@ -28,7 +30,7 @@ export function Layout() {
       <nav className="sticky top-0 hidden h-dvh w-52 shrink-0 flex-col gap-1 py-6 md:flex" aria-label="Navigare principală">
         <Brand />
         <div className="mt-6 flex flex-col gap-1">
-          {NAV.map((n) => (
+          {SIDE_NAV.map((n) => (
             <NavLink
               key={n.to}
               to={n.to}
@@ -62,12 +64,12 @@ export function Layout() {
               to={n.to}
               end={n.end}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-bold ${isActive ? 'text-primary' : 'text-muted'}`
+                `flex flex-col items-center gap-0.5 py-2.5 text-[10.5px] leading-tight font-bold whitespace-nowrap ${isActive ? 'text-primary' : 'text-muted'}`
               }
             >
               {({ isActive }) => (
                 <>
-                  <span className={`rounded-full px-3.5 py-1 transition ${isActive ? 'bg-primary-soft' : ''}`}>
+                  <span className={`rounded-full px-3 py-1 transition ${isActive ? 'bg-primary text-primary-ink' : ''}`}>
                     <Icon name={n.icon} size={22} />
                   </span>
                   {n.label}

@@ -28,7 +28,7 @@ export function ProfilePage() {
 
       <section className="card">
         <div className="flex items-center gap-4">
-          <div className="grid h-16 w-16 place-items-center rounded-2xl bg-accent text-2xl font-extrabold text-white dark:text-[#0c2a2a]">
+          <div className="grid h-16 w-16 place-items-center rounded-2xl bg-accent text-2xl font-extrabold text-white dark:text-[#0a0a0a]">
             {lvl.level}
           </div>
           <div className="flex-1">

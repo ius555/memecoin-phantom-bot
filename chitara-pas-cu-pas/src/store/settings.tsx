@@ -65,7 +65,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark)
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', isDark ? '#17112b' : '#d6334f')
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', isDark ? '#0a0a0a' : '#fafafa')
   }, [isDark])
 
   useEffect(() => {

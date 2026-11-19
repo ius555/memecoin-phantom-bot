@@ -4,61 +4,62 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Tokenuri de culoare – paletă veselă, „de scenă”: coral (acțiuni), turcoaz (accente),
- * violet (evidențieri), chihlimbar (seria de zile). Fond cald, deschis; în tema întunecată,
- * un bleumarin-violet adânc (nu negru). Componentele folosesc numai aceste nume
- * (bg-surface, text-ink, bg-primary, bg-accent ...), deci tema se schimbă dintr-un singur loc.
+ * Tokenuri de culoare – alb-negru, natural: fond alb și text negru (tema deschisă), invers în tema
+ * întunecată, cu nuanțe de gri pentru suprafețe. Culoare rămâne doar unde transmite informație:
+ * degetele 1–4 (aceleași în 2D și 3D), corect / greșit / atenție, lemnul chitarei.
+ * Componentele folosesc numai aceste nume (bg-surface, text-ink, bg-primary ...), deci tema se schimbă
+ * dintr-un singur loc.
  */
 :root {
-  --bg: #fff6ef;
+  --bg: #fafafa;
   --surface: #ffffff;
-  --surface-2: #fcede5;
-  --ink: #26193d;
-  --muted: #6c6181;
-  --line: #f1dfd6;
-  --primary: #d6334f; /* coral-zmeură */
-  --primary-soft: #ffe0e4;
+  --surface-2: #f0f0f0;
+  --ink: #0a0a0a;
+  --muted: #5f5f5f;
+  --line: #e2e2e2;
+  --primary: #0a0a0a; /* butoanele: negre */
+  --primary-soft: #ebebeb;
   --primary-ink: #ffffff;
-  --accent: #0b847c; /* turcoaz */
-  --accent-soft: #d3f4ef;
-  --violet: #5b3fd6;
-  --violet-soft: #ebe5ff;
-  --sun: #ff9f1c; /* chihlimbar */
-  --sun-soft: #ffeccc;
-  --good: #1f9d55;
-  --bad: #d93a3a;
-  --warn: #c77a00;
-  /* culorile degetelor (1–4) + degetul mare */
+  --accent: #333333;
+  --accent-soft: #eeeeee;
+  --violet: #1f1f1f;
+  --violet-soft: #ececec;
+  --sun: #0a0a0a;
+  --sun-soft: #f1f1f1;
+  --good: #16803c;
+  --bad: #c62828;
+  --warn: #a15c00;
+  /* culorile degetelor (1–4) + degetul mare – singura culoare „de învățare” */
   --f1: #10b981;
   --f2: #3b82f6;
   --f3: #f97316;
   --f4: #d946ef;
-  --fT: #8b7d99;
-  /* lemnul grifului în diagrame */
-  --fretboard: #fbe8d4;
-  --fret: #d1b197;
-  --string: #7a6152;
-  /* gradientul „scenei” (antete, carduri importante) */
-  --hero: linear-gradient(135deg, #ff5a6e 0%, #d6334f 45%, #6a3fd6 100%);
+  --fT: #8a8a8a;
+  /* grifurile în diagrame */
+  --fretboard: #f2f2f2;
+  --fret: #b9b9b9;
+  --string: #4a4a4a;
+  /* cardurile importante */
+  --hero: linear-gradient(135deg, #2b2b2b 0%, #0a0a0a 100%);
   color-scheme: light;
 }
 
 .dark {
-  --bg: #17112b;
-  --surface: #221a3b;
-  --surface-2: #2e2550;
-  --ink: #f6f1ff;
-  --muted: #b6aad3;
-  --line: #3a2f63;
-  --primary: #ff6b81;
-  --primary-soft: #4a2140;
-  --primary-ink: #2a0f1a;
-  --accent: #2dd4bf;
-  --accent-soft: #123f45;
-  --violet: #a78bfa;
-  --violet-soft: #2f2563;
-  --sun: #ffb547;
-  --sun-soft: #4a3418;
+  --bg: #0a0a0a;
+  --surface: #151515;
+  --surface-2: #222222;
+  --ink: #f5f5f5;
+  --muted: #a3a3a3;
+  --line: #2c2c2c;
+  --primary: #f5f5f5; /* butoanele: albe */
+  --primary-soft: #262626;
+  --primary-ink: #0a0a0a;
+  --accent: #d4d4d4;
+  --accent-soft: #232323;
+  --violet: #e5e5e5;
+  --violet-soft: #232323;
+  --sun: #f5f5f5;
+  --sun-soft: #232323;
   --good: #4ade80;
   --bad: #f87171;
   --warn: #fbbf24;
@@ -66,11 +67,11 @@
   --f2: #60a5fa;
   --f3: #fb923c;
   --f4: #e879f9;
-  --fT: #a99bc4;
-  --fretboard: #3a2a33;
-  --fret: #7d6170;
-  --string: #e2cbbd;
-  --hero: linear-gradient(135deg, #ff6b81 0%, #c2385a 45%, #5b3fd6 100%);
+  --fT: #9a9a9a;
+  --fretboard: #1e1e1e;
+  --fret: #5a5a5a;
+  --string: #d0d0d0;
+  --hero: linear-gradient(135deg, #2e2e2e 0%, #161616 100%);
   color-scheme: dark;
 }
 
@@ -111,16 +112,16 @@ body {
 
 /* ---------- clase reutilizabile (în Tailwind v4 se definesc cu @utility) ---------- */
 @utility card {
-  @apply rounded-2xl border border-line bg-surface p-4 shadow-[0_2px_10px_-6px_rgba(38,25,61,0.18)];
+  @apply rounded-2xl border border-line bg-surface p-4 shadow-[0_2px_10px_-6px_rgba(0,0,0,0.18)];
 }
 @utility btn {
   @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-bold transition active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100;
 }
 @utility btn-primary {
-  @apply btn bg-primary text-primary-ink shadow-[0_6px_16px_-8px_var(--primary)] hover:brightness-110;
+  @apply btn bg-primary text-primary-ink shadow-[0_6px_16px_-10px_rgba(0,0,0,0.5)] hover:opacity-90;
 }
 @utility btn-accent {
-  @apply btn bg-accent text-white hover:brightness-110 dark:text-[#0c2a2a];
+  @apply btn bg-accent text-white hover:opacity-90 dark:text-[#0a0a0a];
 }
 @utility bg-hero {
   background: var(--hero);

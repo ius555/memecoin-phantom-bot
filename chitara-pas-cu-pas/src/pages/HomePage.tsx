@@ -35,6 +35,9 @@ export function HomePage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between md:hidden">
         <Brand />
+        <Link to="/profil" className="btn-ghost !min-h-11 !rounded-full !px-3" aria-label="Profil și setări">
+          <Icon name="user" /> <span className="text-sm">Profil</span>
+        </Link>
       </div>
 
       <div>
@@ -58,14 +61,14 @@ export function HomePage() {
             {lvl.into}/{lvl.need} XP
           </span>
         </div>
-        <ProgressBar value={lvl.into / lvl.need} color="bg-gradient-to-r from-accent via-violet to-primary" />
+        <ProgressBar value={lvl.into / lvl.need} color="bg-primary" />
       </div>
 
       {/* lecția următoare */}
       {next ? (
         <Link
           to={`/curs/${next.lesson.id}`}
-          className="card bg-hero block overflow-hidden !border-0 !p-0 text-white shadow-lg transition active:scale-[0.99]"
+          className="card bg-hero block overflow-hidden !border-0 !p-0 text-white shadow-lg transition active:scale-[0.99] dark:ring-1 dark:ring-line"
         >
           <div className="flex items-center gap-4 p-5">
             <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/15 text-3xl" aria-hidden>
@@ -90,14 +93,14 @@ export function HomePage() {
 
       {/* funcțiile noi: melodia ta + simulatorul 3D */}
       <div className="grid grid-cols-2 gap-3">
-        <Link to="/cantece/import" className="card flex flex-col gap-1 !border-0 !bg-accent text-white shadow-md transition active:scale-[0.98] dark:text-[#0c2a2a]">
+        <Link to="/cantece/import" className="card flex flex-col gap-1 !border-0 !bg-accent text-white shadow-md transition active:scale-[0.98] dark:text-[#0a0a0a]">
           <span className="text-3xl" aria-hidden>
             🎧
           </span>
           <span className="font-extrabold leading-tight">Încarcă o melodie</span>
           <span className="text-xs font-semibold opacity-90">vezi acordurile și degetele</span>
         </Link>
-        <Link to="/simulator" className="card flex flex-col gap-1 !border-0 !bg-violet text-white shadow-md transition active:scale-[0.98] dark:text-[#1a1236]">
+        <Link to="/simulator" className="card flex flex-col gap-1 !border-0 !bg-violet text-white shadow-md transition active:scale-[0.98] dark:text-[#0a0a0a]">
           <span className="text-3xl" aria-hidden>
             🎸
           </span>
