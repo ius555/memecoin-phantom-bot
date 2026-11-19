@@ -12,6 +12,8 @@ import { STRING_Y, STRUM_X, stringZ } from './geometry'
 import { COLORS, coloredMaterial } from './materials'
 import { audioNow } from './Strings'
 
+const PICK_OUTLINE = new THREE.MeshBasicMaterial({ color: '#111111', side: THREE.BackSide })
+
 type StrumEvent = Extract<GuitarEvent, { type: 'strum' }>
 
 const LEAD = 0.07 // pana pornește puțin înainte de prima coardă
@@ -101,10 +103,16 @@ export function Pick() {
       if (age < 3.2) busy = true
     }
     m.position.set(STRUM_X, y + 0.9, z)
-    // vârful penei în jos, spre corzi; ușor înclinată în direcția mișcării
-    m.rotation.set(tilt, 0, 0)
+    // vârful penei în jos, spre corzi; fața înclinată spre cameră (ca să se vadă și de sus),
+    // plus o mică înclinare în direcția mișcării
+    m.rotation.set(tilt - 0.95, 0, 0)
     if (busy) invalidate()
   })
 
-  return <mesh ref={ref} geometry={geo} material={coloredMaterial(COLORS.pick, 0.32)} rotation={[0, 0, 0]} renderOrder={4} />
+  // pană albă cu contur negru: se vede și peste lemnul deschis, și peste gura neagră a chitarei
+  return (
+    <mesh ref={ref} geometry={geo} material={coloredMaterial(COLORS.pick, 0.3)} renderOrder={4}>
+      <mesh geometry={geo} material={PICK_OUTLINE} scale={[1.1, 1.1, 1.6]} />
+    </mesh>
+  )
 }

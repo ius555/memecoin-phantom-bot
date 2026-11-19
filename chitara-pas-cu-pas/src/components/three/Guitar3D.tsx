@@ -47,7 +47,7 @@ class SceneBoundary extends Component<{ onError: (message: string) => void; chil
   }
 }
 
-export function Guitar3D({ chord, shapeIndex = 0, height = 340, initialView = 'player', className = '', replayKey = 0, strumming = false }: Guitar3DProps) {
+export function Guitar3D({ chord, shapeIndex = 0, height = 340, initialView = 'fingers', className = '', replayKey = 0, strumming = false }: Guitar3DProps) {
   const { settings, isDark } = useSettings()
   const [view, setView] = useState<ViewId>(initialView)
   const [viewKey, setViewKey] = useState(0)

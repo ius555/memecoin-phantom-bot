@@ -88,3 +88,33 @@ export function plainText(text: string, color: string): THREE.CanvasTexture {
     c.fillText(text, s / 2, s / 2 + 4)
   })
 }
+
+/**
+ * Cifra degetului, albă, cu contur închis – lizibilă peste orice fundal (bulina colorată, lemnul grifului).
+ * Se folosește pe un sprite, deci e mereu cu fața spre cameră, din orice unghi.
+ */
+export function fingerDigit(text: string): THREE.CanvasTexture {
+  return make(`digit:${text}`, (c, s) => {
+    c.font = '900 104px Nunito, "Segoe UI", system-ui, sans-serif'
+    c.textAlign = 'center'
+    c.textBaseline = 'middle'
+    c.lineJoin = 'round'
+    c.lineWidth = 16
+    c.strokeStyle = 'rgba(10,10,10,0.55)'
+    c.strokeText(text, s / 2, s / 2 + 6)
+    c.fillStyle = '#fff'
+    c.fillText(text, s / 2, s / 2 + 6)
+  })
+}
+
+/** Umbră moale (disc cu margini estompate), pusă pe grif sub fiecare deget – dă senzația de adâncime. */
+export function softShadow(): THREE.CanvasTexture {
+  return make('shadow', (c, s) => {
+    const g = c.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2)
+    g.addColorStop(0, 'rgba(0,0,0,0.55)')
+    g.addColorStop(0.45, 'rgba(0,0,0,0.35)')
+    g.addColorStop(1, 'rgba(0,0,0,0)')
+    c.fillStyle = g
+    c.fillRect(0, 0, s, s)
+  })
+}

@@ -10,7 +10,7 @@ import { mahogany, rosette, rosewood, spruce, tortoise } from './textures'
 export const COLORS = {
   woundString: '#c9a06a', // corzile groase (bronz)
   plainString: '#e4e2dc', // corzile subțiri (oțel)
-  pick: '#1b1b1b', // pana – celuloid negru
+  pick: '#f7f7f5', // pana – celuloid alb (cu contur negru, vezi Pick.tsx)
 }
 
 /** Repetă o textură astfel încât `size` cm din geometrie să acopere textura o dată. */

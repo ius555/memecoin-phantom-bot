@@ -1,13 +1,17 @@
 /**
- * Degetele pe modelul 3D: degete cu aspect realist (piele, încheieturi, unghii), construite procedural,
- * care vin de sub grif (pe partea corzilor subțiri, unde e palma), se arcuiesc și apasă cu VÂRFUL
- * pe coardă – exact cum trebuie ținut degetul. La barré, arătătorul stă culcat peste corzi.
- * Lângă fiecare vârf, un mic semn cu cifra (1–4) în culoarea degetului din diagramele 2D.
- * „X” / „O” deasupra corzilor.
+ * Degetele pe modelul 3D – „pernuțe” de deget: câte o bulină lucioasă, ușor bombată (forma vârfului
+ * degetului văzut de sus), în culoarea degetului din diagramele 2D, cu contur alb și cifra 1–4 deasupra.
+ * Sunt mari, curate și se văd bine pe orice ecran, din orice unghi. La barré, o bară rotunjită peste corzi.
+ * „X” / „O” deasupra corzilor, înainte de prăguș.
+ *
+ * Detalii vizuale (ieftine pe telefon):
+ * - o umbră moale pe grif, sub fiecare deget (se micșorează când degetul e sus)
+ * - un mic „val” colorat care se lărgește pe grif când degetul apasă coarda
+ * - cifra e un sprite: mereu cu fața spre cameră și neoglindită în modul stângaci
  *
  * Animații:
  * - la apariție, degetele CAD pe rând pe poziție (cu o mică săritură)
- * - la schimbarea acordului, fiecare deget se mută în arc spre noua tastă (ca o mână reală)
+ * - la schimbarea acordului, fiecare deget se mută în arc spre noua tastă
  * - degetele care nu mai sunt folosite se ridică și dispar
  */
 import { useEffect, useMemo, useRef } from 'react'
@@ -15,143 +19,48 @@ import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { ChordShape } from '../../music/chords'
 import { layoutChord, type FingerTarget } from './chordLayout'
-import { STRING_Y, fretX, neckWidth, stringZ } from './geometry'
+import { STRING_Y, fretX, stringZ } from './geometry'
 import { coloredMaterial, cssColor } from './materials'
-import { crossMark, numberBadge, openMark, plainText } from './labels'
-import type { ViewId } from './views'
+import { crossMark, fingerDigit, openMark, plainText, softShadow } from './labels'
 
 const FALLBACK_COLORS = ['#7a6a58', '#10b981', '#3b82f6', '#f97316', '#d946ef']
-/** culoarea pielii și a unghiilor */
-const SKIN = '#e2ab88'
-const NAIL = '#f3d9ce'
 
-const gauss = (t: number, mu: number, w: number) => Math.exp(-((t - mu) * (t - mu)) / (2 * w * w))
+/** Dimensiunile bulinei: puțin alungită de-a lungul grifului, ca vârful unui deget. */
+const PAD_RX = 0.88 // de-a lungul grifului (x)
+const PAD_RZ = 0.56 // de-a curmezișul corzilor (z)
+const PAD_H = 0.4 // cât de bombată e
+/** Centrul bulinei e puțin deasupra corzii, astfel încât partea de jos „apasă” coarda. */
+const PAD_Y = STRING_Y + 0.08
+/** Conturul alb: cât de mare e față de bulină */
+const OUTLINE = 0.1
 
-/**
- * Tub cu grosime variabilă de-a lungul unei curbe (pentru un deget: gros la bază, mai subțire spre vârf,
- * cu încheieturile puțin îngroșate). Three.js are doar tuburi cu grosime constantă, așa că îl construim.
- */
-function taperedTube(curve: THREE.Curve<THREE.Vector3>, radius: (t: number) => number, tubular = 36, radial = 14): THREE.BufferGeometry {
-  const frames = curve.computeFrenetFrames(tubular, false)
-  const pos: number[] = []
-  const nor: number[] = []
-  const idx: number[] = []
-  const P = new THREE.Vector3()
-  const n = new THREE.Vector3()
-  for (let i = 0; i <= tubular; i++) {
-    const t = i / tubular
-    curve.getPointAt(t, P)
-    const r = radius(t)
-    for (let j = 0; j <= radial; j++) {
-      const v = (j / radial) * Math.PI * 2
-      n.copy(frames.normals[i]).multiplyScalar(Math.cos(v)).addScaledVector(frames.binormals[i], Math.sin(v)).normalize()
-      pos.push(P.x + n.x * r, P.y + n.y * r, P.z + n.z * r)
-      nor.push(n.x, n.y, n.z)
+/** Geometriile comune (se creează o singură dată). */
+let shared: { dome: THREE.BufferGeometry; ring: THREE.BufferGeometry; disc: THREE.BufferGeometry } | null = null
+function geos() {
+  if (!shared) {
+    shared = {
+      // sferă turtită: jumătatea de sus e vizibilă, jumătatea de jos intră între corzi
+      dome: new THREE.SphereGeometry(1, 36, 18),
+      // inelul „val” de la apăsare
+      ring: new THREE.RingGeometry(0.82, 1, 40).rotateX(-Math.PI / 2),
+      // discul de umbră
+      disc: new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2),
     }
   }
-  for (let i = 0; i < tubular; i++)
-    for (let j = 0; j < radial; j++) {
-      const a = i * (radial + 1) + j
-      const b = a + radial + 1
-      idx.push(a, b, a + 1, b, b + 1, a + 1)
-    }
-  const g = new THREE.BufferGeometry()
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
-  g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3))
-  g.setIndex(idx)
+  return shared
+}
+
+/** Turtirea barei de barré pe z (rotunjirea capetelor) */
+const BARRE_Z = PAD_RZ * 0.9
+
+/** Bara de barré: o capsulă culcată peste corzi (lungimea compensează scalarea pe z de la randare). */
+function barreGeometry(width: number) {
+  const g = new THREE.CapsuleGeometry(1, Math.max(0.01, width / BARRE_Z), 8, 24)
+  g.rotateX(Math.PI / 2) // capsula stă de-a lungul lui z (peste corzi)
   return g
 }
 
-/** Grosimea relativă a fiecărui deget (arătătorul și mijlociul mai groase, degetul mic mai subțire). */
-const FINGER_SCALE = [1, 1, 1.04, 0.96, 0.84]
-
-interface FingerShape {
-  skin: THREE.BufferGeometry
-  nail: THREE.BufferGeometry
-  label: THREE.Vector3
-}
-
-/**
- * Forma unui deget, în coordonate relative la vârf (vârful e în origine).
- * Degetul pornește din palmă, de sub marginea grifului dinspre coarda 1 (−z), urcă în arc
- * (articulațiile) și coboară aproape vertical, apăsând cu VÂRFUL pe coardă. La barré stă culcat peste corzi.
- */
-function fingerGeometry(t: FingerTarget): FingerShape {
-  const edge = -neckWidth(t.x) / 2 // marginea grifului dinspre coarda 1
-  const k = FINGER_SCALE[t.finger] ?? 1
-  let pts: THREE.Vector3[]
-  if (t.barre) {
-    const zT = -t.width / 2
-    const zB = t.width / 2
-    const d = edge - (t.z + zT)
-    pts = [
-      new THREE.Vector3(-0.3, -3.5, zT + d - 1.6),
-      new THREE.Vector3(-0.2, -1.0, zT + d - 0.75),
-      new THREE.Vector3(-0.1, 0.06, zT + d - 0.05),
-      new THREE.Vector3(0, 0.02, (zT + zB) / 2),
-      new THREE.Vector3(0, 0.02, zB + 0.1),
-    ]
-  } else {
-    const d = edge - t.z
-    pts = [
-      new THREE.Vector3(-0.45, -3.6, d - 1.6),
-      new THREE.Vector3(-0.38, -1.0, d - 0.9),
-      new THREE.Vector3(-0.25, 1.35, d * 0.55 - 0.25), // articulația din mijloc, cea mai sus
-      new THREE.Vector3(-0.08, 1.2, -0.1),
-      new THREE.Vector3(0, 0.12, 0),
-    ]
-  }
-  const curve = new THREE.CatmullRomCurve3(pts, false, 'centripetal')
-  // profilul grosimii: bază groasă → vârf subțire, cu încheieturile puțin mai groase, vârful rotunjit
-  const radius = (u: number) => {
-    let r = (0.47 - 0.11 * u + 0.035 * gauss(u, 0.45, 0.05) + 0.03 * gauss(u, 0.74, 0.045)) * k
-    if (u > 0.9) r *= Math.sqrt(Math.max(0, 1 - ((u - 0.9) / 0.1) ** 2)) * 0.75 + 0.25
-    return r
-  }
-  const skin = taperedTube(curve, radius)
-  // vârful rotunjit (o semisferă) peste capătul tubului
-  const end = curve.getPointAt(1)
-  const tan = curve.getTangentAt(1)
-  const rTip = radius(0.9)
-  const cap = new THREE.SphereGeometry(rTip, 14, 10)
-  cap.translate(end.x - tan.x * rTip * 0.9, end.y - tan.y * rTip * 0.9, end.z - tan.z * rTip * 0.9)
-  const merged = mergeTwo(skin, cap)
-
-  // unghia: pe spatele ultimei falange (spre exteriorul arcului; la barré, în sus)
-  const along = curve.getTangentAt(0.93)
-  const ref = t.barre ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0.25, 1)
-  const dorsal = ref.sub(along.clone().multiplyScalar(ref.dot(along))).normalize()
-  const side = new THREE.Vector3().crossVectors(dorsal, along).normalize()
-  const at = curve.getPointAt(0.9)
-  const nail = new THREE.SphereGeometry(1, 14, 8)
-  const basis = new THREE.Matrix4().makeBasis(side, dorsal, along)
-  nail.applyMatrix4(new THREE.Matrix4().makeScale(rTip * 0.78, 0.07, rTip * 1.15))
-  nail.applyMatrix4(basis)
-  nail.translate(at.x + dorsal.x * radius(0.9) * 0.93, at.y + dorsal.y * radius(0.9) * 0.93, at.z + dorsal.z * radius(0.9) * 0.93)
-
-  // numărul degetului: un mic semn colorat deasupra vârfului
-  const label = t.barre ? new THREE.Vector3(0, 0.95, 0) : new THREE.Vector3(0, 2.15, 0.2)
-  return { skin: merged, nail, label }
-}
-
-/** Unește două geometrii (poziții + normale) într-una singură, ca să fie un singur apel de desenare. */
-function mergeTwo(a: THREE.BufferGeometry, b: THREE.BufferGeometry): THREE.BufferGeometry {
-  const parts = [a.index ? a.toNonIndexed() : a, b.index ? b.toNonIndexed() : b]
-  const out = new THREE.BufferGeometry()
-  for (const name of ['position', 'normal']) {
-    const arrays = parts.map((g) => g.getAttribute(name).array as Float32Array)
-    const all = new Float32Array(arrays.reduce((n, x) => n + x.length, 0))
-    let o = 0
-    for (const x of arrays) {
-      all.set(x, o)
-      o += x.length
-    }
-    out.setAttribute(name, new THREE.BufferAttribute(all, 3))
-  }
-  a.dispose()
-  b.dispose()
-  return out
-}
+const outlineMat = new THREE.MeshBasicMaterial({ color: '#ffffff', side: THREE.BackSide })
 
 const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2)
 function easeOutBounce(t: number) {
@@ -179,61 +88,61 @@ interface Anim {
   dur: number
 }
 
-function FingerMarker({
+function FingerPad({
   target,
   color,
   delay,
   replayKey,
-  decalRotation,
-  mirror,
 }: {
   target: FingerTarget | null
   color: string
   delay: number
   replayKey: number
-  /** rotația cifrei, ca să fie mereu „în picioare” pentru unghiul ales */
-  decalRotation: number
-  mirror: boolean
 }) {
   const invalidate = useThree((s) => s.invalidate)
   const group = useRef<THREE.Group>(null)
+  const shadow = useRef<THREE.Mesh>(null)
+  const ripple = useRef<THREE.Mesh>(null)
   const pose = useRef<Pose | null>(null)
   const anim = useRef<Anim | null>(null)
+  const rippleT0 = useRef<number | null>(null)
   const lastTarget = useRef<FingerTarget | null>(null)
   const lastReplay = useRef(replayKey)
-  const skinMat = coloredMaterial(SKIN, 0.62)
-  const nailMat = coloredMaterial(NAIL, 0.22)
-  const badge = numberBadge(String(target?.finger ?? lastTarget.current?.finger ?? ''), color)
+  const { dome, ring, disc } = geos()
+
+  const padMat = coloredMaterial(color, 0.26)
+  const rippleMat = useMemo(() => new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0, depthWrite: false }), [color])
+  const shadowMat = useMemo(() => new THREE.MeshBasicMaterial({ map: softShadow(), transparent: true, opacity: 0, depthWrite: false }), [])
+  useEffect(() => () => rippleMat.dispose(), [rippleMat])
+  useEffect(() => () => shadowMat.dispose(), [shadowMat])
+
+  const shown = target ?? lastTarget.current
+  const digit = fingerDigit(String(shown?.finger ?? ''))
+  const isBarre = !!shown?.barre
+  const barreW = shown?.barre ? shown.width : 0
+  const barreGeo = useMemo(() => (barreW > 0 ? barreGeometry(barreW) : null), [barreW])
+  useEffect(() => () => barreGeo?.dispose(), [barreGeo])
 
   const key = target ? `${target.x.toFixed(2)}|${target.z.toFixed(2)}|${target.width.toFixed(2)}` : 'none'
-  // forma degetului pentru ținta curentă (păstrăm ultima formă cât timp degetul se ridică)
-  const lastShape = useRef<ReturnType<typeof fingerGeometry> | null>(null)
-  const fingerShape = useMemo(() => {
-    if (!target) return lastShape.current
-    const f = fingerGeometry(target)
-    lastShape.current = f
-    return f
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key])
 
   useEffect(() => {
     const now = performance.now() / 1000
-    // la "arată din nou", degetele cad iar de sus
+    // la „arată din nou”, degetele cad iar de sus
     const replay = lastReplay.current !== replayKey
     lastReplay.current = replayKey
     const prev = replay ? null : pose.current
     if (target) {
-      const to: Pose = { x: target.x, y: target.y, z: target.z, width: target.width, scale: 1 }
+      const to: Pose = { x: target.x, y: PAD_Y, z: target.z, width: target.width, scale: 1 }
       if (!prev || prev.scale < 0.05) {
         // apariție: degetul cade de sus pe tastă
-        anim.current = { kind: 'drop', from: { ...to, y: to.y + 12, scale: 1 }, to, t0: now + delay, dur: 0.55 }
-        pose.current = { ...to, y: to.y + 12, scale: 0 }
+        anim.current = { kind: 'drop', from: { ...to, y: to.y + 10 }, to, t0: now + delay, dur: 0.55 }
+        pose.current = { ...to, y: to.y + 10, scale: 0 }
       } else {
         anim.current = { kind: 'move', from: { ...prev }, to, t0: now + delay * 0.25, dur: 0.38 }
       }
       lastTarget.current = target
     } else if (prev && prev.scale > 0) {
-      anim.current = { kind: 'lift', from: { ...prev }, to: { ...prev, y: prev.y + 6, scale: 0 }, t0: now, dur: 0.3 }
+      anim.current = { kind: 'lift', from: { ...prev }, to: { ...prev, y: prev.y + 5, scale: 0 }, t0: now, dur: 0.3 }
     }
     invalidate()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -243,26 +152,32 @@ function FingerMarker({
     const g = group.current
     const a = anim.current
     if (!g) return
+    const now = performance.now() / 1000
     if (a) {
-      const now = performance.now() / 1000
       const raw = (now - a.t0) / a.dur
       if (raw < 0) {
         // încă așteptăm (degetele cad pe rând)
-        if (a.kind === 'drop') g.visible = false
+        if (a.kind === 'drop') {
+          g.visible = false
+          if (shadow.current) shadow.current.visible = false
+        }
         invalidate()
         return
       }
       const t = Math.min(1, raw)
       const k = a.kind === 'drop' ? easeOutBounce(t) : easeInOut(t)
-      const p: Pose = {
+      pose.current = {
         x: a.from.x + (a.to.x - a.from.x) * k,
-        y: a.from.y + (a.to.y - a.from.y) * k + (a.kind === 'move' ? Math.sin(Math.PI * t) * 2.6 : 0),
+        y: a.from.y + (a.to.y - a.from.y) * k + (a.kind === 'move' ? Math.sin(Math.PI * t) * 2.2 : 0),
         z: a.from.z + (a.to.z - a.from.z) * k,
         width: a.from.width + (a.to.width - a.from.width) * k,
         scale: a.kind === 'lift' ? 1 - t : 1,
       }
-      pose.current = p
-      if (t >= 1) anim.current = null
+      if (t >= 1) {
+        anim.current = null
+        // degetul a ajuns pe coardă: pornește „valul”
+        if (a.kind !== 'lift') rippleT0.current = now
+      }
       invalidate()
     }
     const p = pose.current
@@ -270,44 +185,77 @@ function FingerMarker({
       g.visible = false
       return
     }
-    g.visible = p.scale > 0.02
+    const visible = p.scale > 0.02
+    g.visible = visible
     g.position.set(p.x, p.y, p.z)
     g.scale.setScalar(Math.max(0.001, p.scale))
+
+    // umbra: stă pe grif, mai mică și mai slabă cu cât degetul e mai sus
+    const sh = shadow.current
+    if (sh) {
+      const h = Math.max(0, p.y - PAD_Y)
+      const near = Math.max(0, 1 - h / 10)
+      sh.visible = visible
+      sh.position.set(p.x, 0.04, p.z)
+      const grow = 1 + h * 0.06
+      sh.scale.set(PAD_RX * 3.2 * grow, 1, (p.width + PAD_RZ * 3) * grow)
+      shadowMat.opacity = 0.75 * near * p.scale
+    }
+
+    // „valul” de la apăsare: un inel colorat care se lărgește și dispare
+    const r = ripple.current
+    if (r) {
+      const t0 = rippleT0.current
+      if (t0 === null) r.visible = false
+      else {
+        const t = (now - t0) / 0.6
+        if (t >= 1) {
+          r.visible = false
+          rippleT0.current = null
+        } else {
+          r.visible = visible
+          const s = 0.9 + 1.4 * easeInOut(t)
+          r.position.set(p.x, 0.06, p.z)
+          r.scale.set(PAD_RX * s, 1, (p.width / 2 + PAD_RZ) * s)
+          rippleMat.opacity = 0.55 * (1 - t)
+          invalidate()
+        }
+      }
+    }
   })
 
   return (
-    <group ref={group} visible={false}>
-      {fingerShape && <mesh geometry={fingerShape.skin} material={skinMat} renderOrder={3} />}
-      {fingerShape && <mesh geometry={fingerShape.nail} material={nailMat} renderOrder={3} />}
-      {/* cifra degetului, deasupra vârfului, mereu vizibilă */}
-      {fingerShape && (
-        <mesh
-          position={fingerShape.label}
-          rotation={[-Math.PI / 2, 0, decalRotation]}
-          scale={[mirror ? -1 : 1, 1, 1]}
-          renderOrder={12}
-        >
-          <circleGeometry args={[0.42, 20]} />
-          <meshBasicMaterial map={badge} transparent depthTest={false} depthWrite={false} />
-        </mesh>
-      )}
-    </group>
+    <>
+      <mesh ref={shadow} geometry={disc} material={shadowMat} visible={false} renderOrder={2} />
+      <mesh ref={ripple} geometry={ring} material={rippleMat} visible={false} renderOrder={2} />
+      <group ref={group} visible={false}>
+        {isBarre && barreGeo ? (
+          <>
+            {/* bara de barré, cu contur alb */}
+            <mesh geometry={barreGeo} material={padMat} scale={[PAD_RX * 0.78, PAD_H, BARRE_Z]} renderOrder={3} />
+            <mesh
+              geometry={barreGeo}
+              material={outlineMat}
+              scale={[PAD_RX * 0.78 + OUTLINE, PAD_H + OUTLINE, BARRE_Z + OUTLINE * 0.4]}
+              renderOrder={3}
+            />
+          </>
+        ) : (
+          <>
+            <mesh geometry={dome} material={padMat} scale={[PAD_RX, PAD_H, PAD_RZ]} renderOrder={3} />
+            <mesh geometry={dome} material={outlineMat} scale={[PAD_RX + OUTLINE, PAD_H + OUTLINE, PAD_RZ + OUTLINE]} renderOrder={3} />
+          </>
+        )}
+        {/* cifra degetului, deasupra bulinei, mereu vizibilă și cu fața spre cameră */}
+        <sprite position={[0, PAD_H + 0.15, 0]} scale={[1.2, 1.2, 1]} renderOrder={12}>
+          <spriteMaterial map={digit} transparent depthTest={false} depthWrite={false} />
+        </sprite>
+      </group>
+    </>
   )
 }
 
-export function Fingers({
-  shape,
-  replayKey,
-  themeKey,
-  view,
-  mirror,
-}: {
-  shape: ChordShape | undefined
-  replayKey: number
-  themeKey: string
-  view: ViewId
-  mirror: boolean
-}) {
+export function Fingers({ shape, replayKey, themeKey }: { shape: ChordShape | undefined; replayKey: number; themeKey: string }) {
   const layout = useMemo(() => (shape ? layoutChord(shape) : null), [shape])
   // culorile degetelor vin din tema aplicației (aceleași variabile CSS ca în 2D)
   const colors = useMemo(
@@ -325,21 +273,18 @@ export function Fingers({
   return (
     <group>
       {[1, 2, 3, 4].map((f) => (
-        <FingerMarker
+        <FingerPad
           key={f}
           target={layout?.fingers[f] ?? null}
           color={colors[f]}
           delay={Math.max(0, present.indexOf(f)) * 0.16}
           replayKey={replayKey}
-          // la „Din față” chitara e întoarsă cu 180°, deci întoarcem și cifrele
-          decalRotation={view === 'front' ? Math.PI : 0}
-          mirror={mirror}
         />
       ))}
       {/* X / O deasupra corzilor, chiar înainte de prăguș */}
       {layout?.marks.map((m, s) =>
         m ? (
-          <sprite key={`${s}${m}`} position={[-2.3, STRING_Y + 0.9, stringZ(s, 0) * 1.3]} scale={[1.35, 1.35, 1]} renderOrder={9}>
+          <sprite key={`${s}${m}`} position={[-2.3, STRING_Y + 0.9, stringZ(s, 0) * 1.42]} scale={[1.08, 1.08, 1]} renderOrder={9}>
             <spriteMaterial map={m === 'x' ? crossMark(bad) : openMark(ink)} depthTest={false} transparent />
           </sprite>
         ) : null,

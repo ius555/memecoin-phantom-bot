@@ -86,7 +86,7 @@ export default function GuitarScene({ strumming = false, shape, replayKey, theme
           <GuitarModel />
           <Strings onPluck={onPluck} />
           <Pick />
-          <Fingers shape={shape} replayKey={replayKey} themeKey={themeKey} view={view} mirror={mirror} />
+          <Fingers shape={shape} replayKey={replayKey} themeKey={themeKey} />
         </group>
       </group>
       <CameraRig view={view} viewKey={viewKey} model={model} mirror={mirror} focus={focus} />

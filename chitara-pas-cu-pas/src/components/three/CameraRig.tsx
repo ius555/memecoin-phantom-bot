@@ -28,7 +28,7 @@ export function CameraRig({
   viewKey: number
   model: React.RefObject<THREE.Group | null>
   mirror: boolean
-  /** zona de grif de încadrat (pentru unghiurile apropiate); se ignoră la „Din față” */
+  /** zona de grif de încadrat (pentru unghiurile care urmăresc acordul) */
   focus: { x: number; width: number }
 }) {
   const { camera, invalidate, size } = useThree()
@@ -56,14 +56,16 @@ export function CameraRig({
     // pentru stângaci, și înclinarea laterală se oglindește
     const toQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(d2r(rx), d2r(mirror ? -ry : ry), d2r(rz), order))
     // punctul de focus, transformat cu noua rotație (și oglindit pentru stângaci)
-    const close = view !== 'front'
-    const fx = close ? focus.x : def.focus[0]
+    const close = def.followChord
+    // la „Degete” camera e oblică: mutăm puțin centrul spre cap, ca X/O de la prăguș să rămână în cadru
+    const fx = close ? focus.x - (view === 'fingers' ? 0.6 : 0) : def.focus[0]
     const f = new THREE.Vector3(fx * (mirror ? -1 : 1), def.focus[1], def.focus[2]).applyQuaternion(toQ)
     const toTarget = f
     // distanța la care lățimea dorită umple ecranul (ținând cont că pe telefon ecranul e îngust)
     const cam = camera as THREE.PerspectiveCamera
     const halfTan = Math.tan(d2r(cam.fov / 2))
-    const fitWidth = close ? Math.max(focus.width, 17) * (view === 'player' ? 0.95 : 1) : def.fitWidth
+    // la „Degete” ne apropiem mai mult (se vede bine cum apasă fiecare deget)
+    const fitWidth = close ? Math.max(focus.width, 14) : def.fitWidth
     const distance = Math.max(fitWidth / 2 / (halfTan * Math.max(0.5, size.width / size.height)), 16)
     const toCam = f.clone().add(new THREE.Vector3(0, 0, distance))
     center.current.copy(new THREE.Vector3(32 * (mirror ? -1 : 1), 0, 0).applyQuaternion(toQ))

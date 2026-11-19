@@ -54,17 +54,20 @@ Ecranul **Simulator** (în meniu) și comutatorul **2D / 3D** din lecții, din B
   (`RoomEnvironment`), fără nicio descărcare.
 - **Aceleași date ca diagramele 2D**: pozițiile, degetele și barré-urile vin din `src/music/chords.ts`
   (inclusiv `findBarres`); culorile degetelor vin din aceleași variabile CSS (`--f1`…`--f4`).
-- **Degetele**: degete cu aspect realist (piele, grosime care scade spre vârf, încheieturi, unghii),
-  construite procedural, care vin de sub grif, se arcuiesc și apasă cu vârful pe coardă – arată *cum*
-  ții degetul, nu doar unde. La barré, arătătorul stă culcat peste corzi. Lângă fiecare vârf, cifra 1–4
-  în culoarea din diagramele 2D. La apariție cad pe rând; la schimbarea acordului se mută în arc.
+- **Degetele**: „pernuțe” de deget – buline lucioase, ușor bombate, în culoarea degetului din diagramele 2D,
+  cu contur alb, umbră moale pe grif și cifra 1–4 deasupra (sprite: mereu cu fața spre cameră, lizibilă din
+  orice unghi). La barré, o bară rotunjită peste corzi. Degetele de pe aceeași tastă și corzi alăturate
+  (ex. La major) se așază în diagonală, ca degetele reale, ca să nu se acopere. La apariție cad pe rând
+  (cu un mic „val” colorat când apasă coarda); la schimbarea acordului se mută în arc.
   „X” deasupra corzilor care nu se cântă, „O” pentru cele libere.
 - **Corzile** sunt cilindri metalici (bronz înfășurat / oțel); vibrează (modul fundamental + armonica a doua,
   calculate în shader, între tastă și căluș) și se aprind când sună. Atinge o coardă pe model ca s-o auzi.
-- **Pana** trece peste corzi în jos / în sus după modelul de strumming, inclusiv mișcările „în gol”.
-- **Camera**: rotire, zoom și mutare cu degetul (OrbitControls, cu limite); butoane „Din perspectiva mea”,
-  „Din față”, „De sus pe grif”, cu tranziție lină. Unghiurile apropiate se încadrează automat pe tastele
-  folosite de acord (și pe barré-urile de sus de pe grif).
+- **Pana** (albă, cu contur negru, vizibilă și peste gura chitarei) trece peste corzi în jos / în sus după
+  modelul de strumming, inclusiv mișcările „în gol”.
+- **Camera**: rotire, zoom și mutare cu degetul (OrbitControls, cu limite); trei unghiuri, cu tranziție lină:
+  **Degete** (aproape de mâna de pe grif, oblic, din perspectiva ta), **Mâna cu pana** (gura chitarei, unde
+  lovești corzile) și **De sus** (grifului văzut drept de sus, ca un tab). „Degete” și „De sus” se încadrează
+  automat pe tastele folosite de acord (și pe barré-urile de sus de pe grif).
 - **Mod stângaci**: modelul se oglindește (setarea din Profil), cifrele rămân lizibile.
 
 ### Cum rămâne sincronizat cu sunetul
