@@ -113,10 +113,10 @@ export function ProgressionPlayer({
       {/* timpii măsurii */}
       <div className="my-3 flex justify-center gap-2" aria-hidden>
         {player.countInBeat > 0 ? (
-          <span className="text-2xl font-extrabold text-wood">Numărătoare: {player.countInBeat}…</span>
+          <span className="text-2xl font-extrabold text-accent">Numărătoare: {player.countInBeat}…</span>
         ) : (
           Array.from({ length: items[cur]?.beats ?? 4 }, (_, b) => (
-            <span key={b} className={`h-4 w-4 rounded-full ${b + 1 === beat ? (b === 0 ? 'bg-wood' : 'bg-primary') : 'bg-surface-2'}`} />
+            <span key={b} className={`h-4 w-4 rounded-full ${b + 1 === beat ? (b === 0 ? 'bg-accent' : 'bg-primary') : 'bg-surface-2'}`} />
           ))
         )}
       </div>
@@ -146,7 +146,7 @@ export function ProgressionPlayer({
       </select>
 
       <div className="flex items-center gap-2">
-        <button className={`${player.running ? 'btn-wood' : 'btn-primary'} flex-1`} onClick={player.toggle}>
+        <button className={`${player.running ? 'btn-accent' : 'btn-primary'} flex-1`} onClick={player.toggle}>
           <Icon name={player.running ? 'stop' : 'play'} size={18} /> {player.running ? 'Stop' : 'Ascultă în buclă'}
         </button>
         <button className={`btn-ghost ${metronome ? '!border-primary text-primary' : ''}`} onClick={() => setMetronome(!metronome)} aria-pressed={metronome}>

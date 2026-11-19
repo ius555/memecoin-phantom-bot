@@ -40,7 +40,7 @@ export function ChordBlock({ chords, caption }: { chords: string[]; caption?: st
   return (
     <figure>
       <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="text-xs font-extrabold tracking-wider text-wood uppercase">{chords.length > 1 ? 'Acordurile' : 'Acordul'}</span>
+        <span className="text-xs font-extrabold tracking-wider text-accent uppercase">{chords.length > 1 ? 'Acordurile' : 'Acordul'}</span>
         <ViewToggle />
       </div>
       {is3d ? (

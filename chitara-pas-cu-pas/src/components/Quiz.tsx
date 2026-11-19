@@ -72,7 +72,7 @@ export function Quiz({ questions, onFinish }: { questions: QuizQuestion[]; onFin
         </span>
         <span className="flex gap-1" aria-hidden>
           {questions.map((_, i) => (
-            <span key={i} className={`h-2 w-6 rounded-full ${i < index ? 'bg-primary' : i === index ? 'bg-wood' : 'bg-surface-2'}`} />
+            <span key={i} className={`h-2 w-6 rounded-full ${i < index ? 'bg-primary' : i === index ? 'bg-accent' : 'bg-surface-2'}`} />
           ))}
         </span>
       </div>

@@ -32,13 +32,13 @@ export function layoutChord(shape: ChordShape): ChordLayout {
     const x = fingerX(b.fret)
     const z1 = stringZ(b.from, x)
     const z2 = stringZ(b.to, x)
-    fingers[b.finger] = { finger: b.finger, fret: b.fret, x, y: STRING_Y + 0.25, z: (z1 + z2) / 2, width: Math.abs(z1 - z2), barre: true }
+    fingers[b.finger] = { finger: b.finger, fret: b.fret, x, y: STRING_Y + 0.42, z: (z1 + z2) / 2, width: Math.abs(z1 - z2), barre: true }
   }
   shape.frets.forEach((f, s) => {
     const finger = shape.fingers[s]
     if (f === null || f <= 0 || !finger || fingers[finger]) return
     const x = fingerX(f)
-    fingers[finger] = { finger, fret: f, x, y: STRING_Y + 0.25, z: stringZ(s, x), width: 0, barre: false }
+    fingers[finger] = { finger, fret: f, x, y: STRING_Y + 0.42, z: stringZ(s, x), width: 0, barre: false }
   })
   const marks = shape.frets.map((f) => (f === null ? 'x' : f === 0 ? 'o' : null))
   return { fingers, marks }

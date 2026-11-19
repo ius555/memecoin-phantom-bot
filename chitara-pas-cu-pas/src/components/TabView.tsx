@@ -63,12 +63,12 @@ export function TabView({
             return (
               <g key={i}>
                 {ev.barBefore && i > 0 && <line x1={x - COL / 2} x2={x - COL / 2} y1={12} y2={12 + 5 * ROW} stroke="var(--muted)" strokeWidth={1.2} />}
-                {i === current && <rect x={x - COL / 2 + 2} y={2} width={COL - 4} height={5 * ROW + 20} rx={6} fill="var(--wood)" opacity={0.18} />}
+                {i === current && <rect x={x - COL / 2 + 2} y={2} width={COL - 4} height={5 * ROW + 20} rx={6} fill="var(--accent)" opacity={0.18} />}
                 {ev.notes.map((n) => {
                   const y = 12 + (5 - n.string) * ROW
                   return (
                     <g key={n.string} className="cursor-pointer" onClick={() => playNote(n.string, n.fret)}>
-                      <rect x={x - 9} y={y - 8} width={18} height={16} rx={4} fill={i === current ? 'var(--wood)' : 'var(--surface)'} />
+                      <rect x={x - 9} y={y - 8} width={18} height={16} rx={4} fill={i === current ? 'var(--accent)' : 'var(--surface)'} />
                       <text x={x} y={y + 4.5} textAnchor="middle" fontSize={12.5} fontWeight={800} fill={i === current ? '#fff' : 'var(--ink)'} fontFamily="ui-monospace, monospace">
                         {n.fret}
                       </text>
@@ -99,7 +99,7 @@ export function TabView({
           <Fretboard
             from={0}
             to={Math.max(5, markFrets + 1)}
-            marks={current >= 0 ? events[current].notes.map((n) => ({ string: n.string, fret: n.fret, label: String(n.fret), color: 'var(--wood)' })) : []}
+            marks={current >= 0 ? events[current].notes.map((n) => ({ string: n.string, fret: n.fret, label: String(n.fret), color: 'var(--accent)' })) : []}
           />
         </div>
       )}

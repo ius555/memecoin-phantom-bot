@@ -36,7 +36,7 @@ export function BarreDrill() {
           Pasul 2: barré complet
         </button>
       </div>
-      <Fretboard from={Math.max(1, fret - 2)} to={fret + 2} marks={marks.map((m) => (m.string === current ? { ...m, color: 'var(--wood)' } : m))} />
+      <Fretboard from={Math.max(1, fret - 2)} to={fret + 2} marks={marks.map((m) => (m.string === current ? { ...m, color: 'var(--accent)' } : m))} />
       <label className="flex items-center gap-3 font-bold">
         <span className="w-24 text-sm">Tasta {fret}</span>
         <input type="range" min={1} max={9} value={fret} onChange={(e) => setFret(Number(e.target.value))} className="flex-1 accent-[var(--primary)]" />
@@ -84,7 +84,7 @@ export function BarreShapes() {
     string: s.rootString,
     fret: f + 1,
     label: NOTE_NAMES[midiAt(s.rootString, f + 1) % 12].replace('#', '♯'),
-    color: f + 1 === fret ? 'var(--wood)' : 'var(--fret)',
+    color: f + 1 === fret ? 'var(--accent)' : 'var(--fret)',
   }))
 
   return (
@@ -164,7 +164,7 @@ export function Pentatonic() {
       ...n,
       finger,
       label: isRoot ? 'R' : String(finger),
-      color: playing ? 'var(--wood)' : isRoot ? 'var(--ink)' : undefined,
+      color: playing ? 'var(--accent)' : isRoot ? 'var(--ink)' : undefined,
     }
   })
 

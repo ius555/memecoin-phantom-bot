@@ -4,61 +4,73 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Tokenuri de culoare – paletă caldă: crem, lemn, verde salvie.
- * Componentele folosesc numai aceste nume (bg-surface, text-ink, bg-primary ...),
- * deci tema se schimbă dintr-un singur loc.
+ * Tokenuri de culoare – paletă veselă, „de scenă”: coral (acțiuni), turcoaz (accente),
+ * violet (evidențieri), chihlimbar (seria de zile). Fond cald, deschis; în tema întunecată,
+ * un bleumarin-violet adânc (nu negru). Componentele folosesc numai aceste nume
+ * (bg-surface, text-ink, bg-primary, bg-accent ...), deci tema se schimbă dintr-un singur loc.
  */
 :root {
-  --bg: #f7f1e6;
-  --surface: #fffcf6;
-  --surface-2: #f0e7d8;
-  --ink: #2c241d;
-  --muted: #6e6152;
-  --line: #e2d5c1;
-  --primary: #3f6b4a; /* verde salvie închis */
-  --primary-soft: #dcebdc;
+  --bg: #fff6ef;
+  --surface: #ffffff;
+  --surface-2: #fcede5;
+  --ink: #26193d;
+  --muted: #6c6181;
+  --line: #f1dfd6;
+  --primary: #d6334f; /* coral-zmeură */
+  --primary-soft: #ffe0e4;
   --primary-ink: #ffffff;
-  --wood: #a5643a; /* lemn de nuc */
-  --wood-soft: #f3e1cf;
-  --good: #2f8a4c;
-  --bad: #c0462f;
-  --warn: #c98a12;
+  --accent: #0b847c; /* turcoaz */
+  --accent-soft: #d3f4ef;
+  --violet: #5b3fd6;
+  --violet-soft: #ebe5ff;
+  --sun: #ff9f1c; /* chihlimbar */
+  --sun-soft: #ffeccc;
+  --good: #1f9d55;
+  --bad: #d93a3a;
+  --warn: #c77a00;
   /* culorile degetelor (1–4) + degetul mare */
-  --f1: #3f9a5a;
-  --f2: #2f7fc1;
-  --f3: #d77a22;
-  --f4: #a24c8f;
-  --fT: #7a6a58;
+  --f1: #10b981;
+  --f2: #3b82f6;
+  --f3: #f97316;
+  --f4: #d946ef;
+  --fT: #8b7d99;
   /* lemnul grifului în diagrame */
-  --fretboard: #f1e2c6;
-  --fret: #b9a184;
-  --string: #6f5a45;
+  --fretboard: #fbe8d4;
+  --fret: #d1b197;
+  --string: #7a6152;
+  /* gradientul „scenei” (antete, carduri importante) */
+  --hero: linear-gradient(135deg, #ff5a6e 0%, #d6334f 45%, #6a3fd6 100%);
   color-scheme: light;
 }
 
 .dark {
-  --bg: #1b1713;
-  --surface: #26201a;
-  --surface-2: #322a22;
-  --ink: #f4ecdf;
-  --muted: #b9aa97;
-  --line: #3e342a;
-  --primary: #7cb48a;
-  --primary-soft: #2c3d2f;
-  --primary-ink: #13200f;
-  --wood: #d79c66;
-  --wood-soft: #3d2d1f;
-  --good: #6cc184;
-  --bad: #ec7a62;
-  --warn: #e9b44c;
-  --f1: #62c07c;
-  --f2: #5ea7e6;
-  --f3: #f0994a;
-  --f4: #cf78ba;
-  --fT: #b5a28c;
-  --fretboard: #3a2c20;
-  --fret: #806a52;
-  --string: #c9b59c;
+  --bg: #17112b;
+  --surface: #221a3b;
+  --surface-2: #2e2550;
+  --ink: #f6f1ff;
+  --muted: #b6aad3;
+  --line: #3a2f63;
+  --primary: #ff6b81;
+  --primary-soft: #4a2140;
+  --primary-ink: #2a0f1a;
+  --accent: #2dd4bf;
+  --accent-soft: #123f45;
+  --violet: #a78bfa;
+  --violet-soft: #2f2563;
+  --sun: #ffb547;
+  --sun-soft: #4a3418;
+  --good: #4ade80;
+  --bad: #f87171;
+  --warn: #fbbf24;
+  --f1: #34d399;
+  --f2: #60a5fa;
+  --f3: #fb923c;
+  --f4: #e879f9;
+  --fT: #a99bc4;
+  --fretboard: #3a2a33;
+  --fret: #7d6170;
+  --string: #e2cbbd;
+  --hero: linear-gradient(135deg, #ff6b81 0%, #c2385a 45%, #5b3fd6 100%);
   color-scheme: dark;
 }
 
@@ -72,8 +84,12 @@
   --color-primary: var(--primary);
   --color-primary-soft: var(--primary-soft);
   --color-primary-ink: var(--primary-ink);
-  --color-wood: var(--wood);
-  --color-wood-soft: var(--wood-soft);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-violet: var(--violet);
+  --color-violet-soft: var(--violet-soft);
+  --color-sun: var(--sun);
+  --color-sun-soft: var(--sun-soft);
   --color-good: var(--good);
   --color-bad: var(--bad);
   --color-warn: var(--warn);
@@ -95,16 +111,19 @@ body {
 
 /* ---------- clase reutilizabile (în Tailwind v4 se definesc cu @utility) ---------- */
 @utility card {
-  @apply rounded-2xl border border-line bg-surface p-4 shadow-[0_1px_0_rgba(0,0,0,0.04)];
+  @apply rounded-2xl border border-line bg-surface p-4 shadow-[0_2px_10px_-6px_rgba(38,25,61,0.18)];
 }
 @utility btn {
   @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-bold transition active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100;
 }
 @utility btn-primary {
-  @apply btn bg-primary text-primary-ink hover:brightness-110;
+  @apply btn bg-primary text-primary-ink shadow-[0_6px_16px_-8px_var(--primary)] hover:brightness-110;
 }
-@utility btn-wood {
-  @apply btn bg-wood text-white hover:brightness-110 dark:text-[#1b1713];
+@utility btn-accent {
+  @apply btn bg-accent text-white hover:brightness-110 dark:text-[#0c2a2a];
+}
+@utility bg-hero {
+  background: var(--hero);
 }
 @utility btn-ghost {
   @apply btn border border-line bg-surface text-ink hover:bg-surface-2;

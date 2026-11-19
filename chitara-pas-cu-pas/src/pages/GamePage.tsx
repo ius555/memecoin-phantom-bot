@@ -279,7 +279,7 @@ export function GamePage() {
           <div className="text-xs font-bold text-muted">puncte</div>
         </div>
         <div className="text-center">
-          <div className="text-2xl font-extrabold text-wood">x{Math.min(4, 1 + Math.floor(combo / 3))}</div>
+          <div className="text-2xl font-extrabold text-accent">x{Math.min(4, 1 + Math.floor(combo / 3))}</div>
           <div className="text-xs font-bold text-muted">combo {combo}</div>
         </div>
         <button
@@ -312,7 +312,7 @@ export function GamePage() {
           {player.countInBeat > 0 ? (
             <div className="py-10">
               <div className="text-sm font-bold text-muted">Pregătește-te: {items[0].chord}</div>
-              <div key={player.countInBeat} className="beat-pulse text-8xl font-extrabold text-wood">
+              <div key={player.countInBeat} className="beat-pulse text-8xl font-extrabold text-accent">
                 {player.countInBeat}
               </div>
             </div>
@@ -339,7 +339,7 @@ export function GamePage() {
 
       <div className="my-4 flex justify-center gap-3" aria-hidden>
         {Array.from({ length: prog.beats }, (_, b) => (
-          <span key={b} className={`h-5 w-5 rounded-full ${b + 1 === beat ? (b === 0 ? 'bg-wood' : 'bg-primary') : 'bg-surface-2'}`} />
+          <span key={b} className={`h-5 w-5 rounded-full ${b + 1 === beat ? (b === 0 ? 'bg-accent' : 'bg-primary') : 'bg-surface-2'}`} />
         ))}
       </div>
 
@@ -355,7 +355,7 @@ export function GamePage() {
         <div className="card text-center">
           <div className="mb-2 font-bold">🎤 Te ascult… cântă {items[cur].chord}</div>
           <div className="h-3 overflow-hidden rounded-full bg-surface-2">
-            <div className="h-full bg-wood" style={{ width: `${listener.level * 100}%` }} />
+            <div className="h-full bg-accent" style={{ width: `${listener.level * 100}%` }} />
           </div>
         </div>
       )}

@@ -87,7 +87,7 @@ export function Brand() {
       <img src="./icon.svg" alt="" className="h-10 w-10" />
       <div className="leading-tight">
         <div className="h-display text-lg">Chitara</div>
-        <div className="text-xs font-bold tracking-wide text-wood uppercase">pas cu pas</div>
+        <div className="text-xs font-bold tracking-wide text-accent uppercase">pas cu pas</div>
       </div>
     </div>
   )

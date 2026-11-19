@@ -46,7 +46,7 @@ export function StringsWidget() {
             active === i ? 'border-primary bg-primary-soft' : 'border-line'
           }`}
         >
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-wood text-lg font-extrabold text-white">{s.number}</span>
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent text-lg font-extrabold text-white">{s.number}</span>
           <span className="w-14 shrink-0">
             <span className="block text-xl leading-none font-extrabold">{s.letter}</span>
             <span className="text-xs font-bold text-muted">{s.solfege}</span>

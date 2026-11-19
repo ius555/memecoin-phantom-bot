@@ -122,7 +122,7 @@ export function PickingPatternView({ patternIds, sets }: { patternIds?: string[]
         </div>
       </div>
 
-      <button className={`${player.running ? 'btn-wood' : 'btn-primary'} w-full`} onClick={player.toggle}>
+      <button className={`${player.running ? 'btn-accent' : 'btn-primary'} w-full`} onClick={player.toggle}>
         <Icon name={player.running ? 'stop' : 'play'} size={18} /> {player.running ? 'Stop' : 'Ascultă'}
       </button>
       <label className="mt-3 flex items-center gap-3 text-sm font-bold text-muted">

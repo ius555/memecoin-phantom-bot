@@ -33,14 +33,14 @@ export interface Guitar3DProps {
 
 type FailReason = 'no-webgl' | 'weak' | 'slow' | 'error'
 
-/** Prinde erorile din scena 3D (ex. WebGL refuzat) și trece la 2D. */
-class SceneBoundary extends Component<{ onError: () => void; children: ReactNode }, { failed: boolean }> {
+/** Prinde erorile din scena 3D (ex. WebGL refuzat) și trece la 2D, păstrând mesajul tehnic. */
+class SceneBoundary extends Component<{ onError: (message: string) => void; children: ReactNode }, { failed: boolean }> {
   state = { failed: false }
   static getDerivedStateFromError() {
     return { failed: true }
   }
-  componentDidCatch() {
-    this.props.onError()
+  componentDidCatch(error: unknown) {
+    this.props.onError(error instanceof Error ? error.message : String(error))
   }
   render() {
     return this.state.failed ? null : this.props.children
@@ -55,6 +55,10 @@ export function Guitar3D({ chord, shapeIndex = 0, height = 340, initialView = 'p
     const s = check3DSupport()
     return s.ok ? null : s.reason
   })
+  const [detail, setDetail] = useState<string | null>(null)
+  // la pierderea contextului WebGL (des pe telefon, când treci prin alte aplicații) reconstruim scena
+  const [sceneKey, setSceneKey] = useState(0)
+  const losses = useRef<number[]>([])
   const [visible, setVisible] = useState(false)
   // scena există doar cât e (aproape) pe ecran: când ieși din ea, randarea se oprește imediat,
   // iar după câteva secunde scena e demontată și contextul WebGL eliberat (memorie pe telefon)
@@ -94,16 +98,34 @@ export function Guitar3D({ chord, shapeIndex = 0, height = 340, initialView = 'p
     playNote(s, f ?? 0)
   }
 
+  function contextLost() {
+    const now = Date.now()
+    losses.current = [...losses.current.filter((t) => now - t < 60000), now]
+    // o pierdere izolată e normală: reconstruim scena; de 3 ori într-un minut → trecem la 2D
+    if (losses.current.length >= 3) {
+      setDetail('Contextul WebGL s-a pierdut de mai multe ori (memorie grafică insuficientă?)')
+      setFail('error')
+    } else setSceneKey((k) => k + 1)
+  }
+
+  function retry() {
+    losses.current = []
+    setDetail(null)
+    setFail(null)
+    setSceneKey((k) => k + 1)
+  }
+
   if (fail) {
     return (
       <div className={`flex flex-col items-center gap-3 ${className}`}>
-        <p className="w-full rounded-xl bg-warn/10 p-3 text-sm" role="status">
+        <div className="w-full rounded-xl bg-warn/10 p-3 text-sm" role="status">
           🧩 {fallbackMessage(fail)}
-        </p>
+          {detail && <div className="mt-1 font-mono text-[11px] break-words text-muted">Detalii: {detail}</div>}
+        </div>
         {ch && <ChordDiagram chord={ch} shapeIndex={shapeIndex} playable showNotes />}
-        {fail === 'weak' && (
-          <button className="btn-ghost" onClick={() => setFail(null)}>
-            Încearcă totuși 3D
+        {fail !== 'no-webgl' && (
+          <button className="btn-ghost" onClick={retry}>
+            {fail === 'weak' ? 'Încearcă totuși 3D' : 'Încearcă din nou 3D'}
           </button>
         )}
       </div>
@@ -118,7 +140,13 @@ export function Guitar3D({ chord, shapeIndex = 0, height = 340, initialView = 'p
         style={{ height }}
       >
         {mounted ? (
-          <SceneBoundary onError={() => setFail('error')}>
+          <SceneBoundary
+            key={sceneKey}
+            onError={(m) => {
+              setDetail(m)
+              setFail('error')
+            }}
+          >
             <Suspense fallback={<Loading />}>
               <GuitarScene
                 shape={shape}
@@ -131,7 +159,7 @@ export function Guitar3D({ chord, shapeIndex = 0, height = 340, initialView = 'p
                 active={visible}
                 onPluck={pluck}
                 onPerformanceFail={() => setFail('slow')}
-                onContextLost={() => setFail('error')}
+                onContextLost={contextLost}
               />
             </Suspense>
           </SceneBoundary>

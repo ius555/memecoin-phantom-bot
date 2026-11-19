@@ -4,11 +4,13 @@
  * Performanță:
  * - frameloop "demand": se desenează un cadru doar când se mișcă ceva (cameră, animații, sunet)
  * - "never" când simulatorul nu e pe ecran
- * - fără umbre, materiale toon ieftine, rezoluție limitată (dpr ≤ 1,75)
+ * - fără umbre; materiale PBR cu un mediu de lumină generat o singură dată (RoomEnvironment, fără descărcări)
+ * - rezoluție limitată (dpr ≤ 1,75)
  * - PerformanceMonitor: dacă telefonul nu face față, scădem rezoluția, apoi anunțăm trecerea la 2D
  */
-import { useMemo, useRef } from 'react'
-import { Canvas } from '@react-three/fiber'
+import { useEffect, useMemo, useRef } from 'react'
+import { Canvas, useThree } from '@react-three/fiber'
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import { PerformanceMonitor } from '@react-three/drei'
 import * as THREE from 'three'
 import { GuitarModel } from './GuitarModel'
@@ -65,10 +67,15 @@ export default function GuitarScene({ strumming = false, shape, replayKey, theme
       camera={{ fov: 38, near: 1, far: 800, position: [0, 0, 60] }}
       gl={{ antialias, alpha: true, powerPreference: 'default', stencil: false }}
       onCreated={({ gl }) => {
-        gl.domElement.addEventListener('webglcontextlost', (e) => {
-          e.preventDefault()
-          onContextLost?.()
-        })
+        // contextul pierdut se anunță o singură dată; Guitar3D reconstruiește scena
+        gl.domElement.addEventListener(
+          'webglcontextlost',
+          (e) => {
+            e.preventDefault()
+            onContextLost?.()
+          },
+          { once: true },
+        )
       }}
       style={{ touchAction: 'none' }}
     >
@@ -77,9 +84,7 @@ export default function GuitarScene({ strumming = false, shape, replayKey, theme
         onDecline={() => setDpr((d) => Math.max(1, d - 0.5))}
         onFallback={() => onPerformanceFail?.()}
       />
-      <ambientLight intensity={1.15} />
-      <directionalLight position={[25, 60, 45]} intensity={1.7} />
-      <directionalLight position={[-30, -20, 30]} intensity={0.35} />
+      <Lighting />
       <group ref={model}>
         <group scale={[mirror ? -1 : 1, 1, 1]}>
           <GuitarModel />
@@ -90,5 +95,31 @@ export default function GuitarScene({ strumming = false, shape, replayKey, theme
       </group>
       <CameraRig view={view} viewKey={viewKey} model={model} mirror={mirror} focus={focus} />
     </Canvas>
+  )
+}
+
+/**
+ * Lumina: un mediu de reflexii generat local (o „cameră” virtuală luminoasă) pentru lemnul lăcuit
+ * și metale, plus o lumină principală caldă și una de contur. Mediul se generează o singură dată.
+ */
+function Lighting() {
+  const { gl, scene } = useThree()
+  useEffect(() => {
+    const pmrem = new THREE.PMREMGenerator(gl)
+    const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture
+    scene.environment = env
+    scene.environmentIntensity = 0.75
+    pmrem.dispose()
+    return () => {
+      scene.environment = null
+      env.dispose()
+    }
+  }, [gl, scene])
+  return (
+    <>
+      <hemisphereLight args={['#fff4e6', '#3a2a22', 0.55]} />
+      <directionalLight position={[30, 70, 50]} intensity={1.6} color="#fff1dc" />
+      <directionalLight position={[-40, 10, -30]} intensity={0.5} color="#cfe3ff" />
+    </>
   )
 }

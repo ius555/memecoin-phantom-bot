@@ -106,7 +106,7 @@ export function RecognizePage() {
 
           {/* nivelul sunetului */}
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-2" aria-hidden>
-            <div className="h-full bg-wood transition-[width] duration-100" style={{ width: `${listener.level * 100}%` }} />
+            <div className="h-full bg-accent transition-[width] duration-100" style={{ width: `${listener.level * 100}%` }} />
           </div>
 
           {/* chromagrama */}

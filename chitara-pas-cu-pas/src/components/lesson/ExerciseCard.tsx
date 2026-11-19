@@ -16,7 +16,7 @@ export function ExerciseCard({ title, steps, minutes }: { title: string; steps: 
   const mm = left !== null ? `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}` : ''
 
   return (
-    <section className="card border-l-4 border-l-wood">
+    <section className="card border-l-4 border-l-accent">
       <h3 className="mb-3 flex items-center gap-2 text-lg font-extrabold">
         <span aria-hidden>🎯</span> {title}
       </h3>

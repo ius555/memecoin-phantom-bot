@@ -11,6 +11,7 @@ import { ChordsPage } from './pages/ChordsPage'
 import { ChordDetailPage } from './pages/ChordDetailPage'
 import { TunerPage } from './pages/TunerPage'
 import { MetronomePage } from './pages/MetronomePage'
+import { ImportPage } from './pages/ImportPage'
 import { SimulatorPage } from './pages/SimulatorPage'
 import { OneMinutePage } from './pages/OneMinutePage'
 import { EditorPage } from './pages/EditorPage'
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="acorduri" element={<ChordsPage />} />
           <Route path="acorduri/:name" element={<ChordDetailPage />} />
           <Route path="cantece" element={<SongsPage />} />
+          <Route path="cantece/import" element={<ImportPage />} />
           <Route path="cantece/:songId" element={<SongPage />} />
           <Route path="simulator" element={<SimulatorPage />} />
           <Route path="rutina" element={<RoutinePage />} />

@@ -9,7 +9,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { onGuitarEvent, type GuitarEvent } from '../../audio/events'
 import { STRING_Y, STRUM_X, stringZ } from './geometry'
-import { COLORS, toon } from './materials'
+import { COLORS, coloredMaterial } from './materials'
 import { audioNow } from './Strings'
 
 type StrumEvent = Extract<GuitarEvent, { type: 'strum' }>
@@ -106,5 +106,5 @@ export function Pick() {
     if (busy) invalidate()
   })
 
-  return <mesh ref={ref} geometry={geo} material={toon(COLORS.pick)} rotation={[0, 0, 0]} renderOrder={4} />
+  return <mesh ref={ref} geometry={geo} material={coloredMaterial(COLORS.pick, 0.32)} rotation={[0, 0, 0]} renderOrder={4} />
 }

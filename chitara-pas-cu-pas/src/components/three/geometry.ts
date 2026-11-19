@@ -56,7 +56,8 @@ export function neckWidth(x: number): number {
 
 /** Grosimea vizuală a corzii (corzile groase sunt mai groase și în model). */
 export function stringRadius(s: number): number {
-  return 0.085 - s * 0.01
+  // puțin mai groase decât în realitate, ca să se vadă bine și pe ecranul telefonului
+  return 0.115 - s * 0.012
 }
 
 /**

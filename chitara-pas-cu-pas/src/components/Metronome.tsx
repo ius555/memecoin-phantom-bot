@@ -83,7 +83,7 @@ export function Metronome({
               key={`${i}-${active ? clock.step : 'x'}`}
               className={`grid place-items-center rounded-2xl font-extrabold transition-colors ${active ? 'beat-pulse' : ''} ${
                 isBeat ? 'h-14 w-14 text-2xl' : 'h-14 w-11 text-base'
-              } ${active ? (i === 0 ? 'bg-wood text-white' : 'bg-primary text-primary-ink') : 'bg-surface-2 text-muted'}`}
+              } ${active ? (i === 0 ? 'bg-accent text-white' : 'bg-primary text-primary-ink') : 'bg-surface-2 text-muted'}`}
             >
               {l}
             </span>
@@ -115,7 +115,7 @@ export function Metronome({
       />
 
       <div className="mt-3 flex gap-2">
-        <button className={`${clock.running ? 'btn-wood' : 'btn-primary'} flex-1`} onClick={clock.toggle}>
+        <button className={`${clock.running ? 'btn-accent' : 'btn-primary'} flex-1`} onClick={clock.toggle}>
           <Icon name={clock.running ? 'stop' : 'play'} size={18} /> {clock.running ? 'Stop' : 'Start'}
         </button>
         <button className="btn-ghost" onClick={tap}>

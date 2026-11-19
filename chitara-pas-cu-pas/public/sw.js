@@ -4,7 +4,7 @@
  * - resursele (JS, CSS, imagini, fonturi): întâi cache-ul, apoi rețeaua
  * Totul ce s-a încărcat o dată rămâne disponibil offline.
  */
-const CACHE = 'cpp-v1'
+const CACHE = 'cpp-v2'
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png']
 
 self.addEventListener('install', (event) => {

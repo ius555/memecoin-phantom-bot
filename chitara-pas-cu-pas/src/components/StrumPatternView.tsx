@@ -9,7 +9,7 @@ import { Icon } from './Icon'
 
 export function StrumArrow({ dir, active, ghost }: { dir: StrumSlot; active?: boolean; ghost?: boolean }) {
   const up = dir === 'U'
-  const color = active ? (up ? 'var(--wood)' : 'var(--primary)') : 'var(--muted)'
+  const color = active ? (up ? 'var(--accent)' : 'var(--primary)') : 'var(--muted)'
   return (
     <svg viewBox="0 0 40 64" className={`h-14 w-9 transition-transform ${active ? 'scale-110' : ''}`} aria-hidden style={{ opacity: ghost ? 0.25 : 1 }}>
       <g transform={up ? 'rotate(180 20 32)' : undefined}>
@@ -88,7 +88,7 @@ export function StrumPatternView({
           <button
             key={c}
             onClick={() => setChord(c)}
-            className={`min-h-10 min-w-11 rounded-lg border-2 px-2 font-bold ${c === chord ? 'border-wood bg-wood-soft' : 'border-line'}`}
+            className={`min-h-10 min-w-11 rounded-lg border-2 px-2 font-bold ${c === chord ? 'border-accent bg-accent-soft' : 'border-line'}`}
           >
             {c}
           </button>
@@ -96,7 +96,7 @@ export function StrumPatternView({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <button className={`${player.running ? 'btn-wood' : 'btn-primary'} flex-1`} onClick={player.toggle}>
+        <button className={`${player.running ? 'btn-accent' : 'btn-primary'} flex-1`} onClick={player.toggle}>
           <Icon name={player.running ? 'stop' : 'play'} size={18} /> {player.running ? 'Stop' : 'Ascultă și cântă'}
         </button>
         <button className={`btn-ghost ${metronome ? '!border-primary text-primary' : ''}`} onClick={() => setMetronome(!metronome)} aria-pressed={metronome}>

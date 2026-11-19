@@ -102,10 +102,10 @@ export function OneMinuteChange({ pairs = DEFAULT_PAIRS, seconds = 60 }: { pairs
             <button className="btn-primary w-full" onClick={start}>
               <Icon name="timer" /> Pornește minutul
             </button>
-            {best > 0 && <p className="mt-2 text-sm font-bold text-wood">Recordul tău: {best} schimbări</p>}
+            {best > 0 && <p className="mt-2 text-sm font-bold text-accent">Recordul tău: {best} schimbări</p>}
           </>
         )}
-        {phase === 'countdown' && <div className="beat-pulse py-6 text-7xl font-extrabold text-wood" key={pre}>{pre}</div>}
+        {phase === 'countdown' && <div className="beat-pulse py-6 text-7xl font-extrabold text-accent" key={pre}>{pre}</div>}
         {phase === 'running' && (
           <>
             <div className={`text-7xl font-extrabold tabular-nums ${left <= 10 ? 'text-bad' : ''}`}>
@@ -177,8 +177,8 @@ export function ProgressChart({ values, labels, unit = 'schimbări' }: { values:
       ))}
       {goal <= max && (
         <g>
-          <line x1={28} x2={W} y1={H - (goal / max) * (H - 10)} y2={H - (goal / max) * (H - 10)} stroke="var(--wood)" strokeDasharray="4 4" />
-          <text x={W} y={H - (goal / max) * (H - 10) - 4} textAnchor="end" fontSize={10} fontWeight={700} fill="var(--wood)">
+          <line x1={28} x2={W} y1={H - (goal / max) * (H - 10)} y2={H - (goal / max) * (H - 10)} stroke="var(--accent)" strokeDasharray="4 4" />
+          <text x={W} y={H - (goal / max) * (H - 10) - 4} textAnchor="end" fontSize={10} fontWeight={700} fill="var(--accent)">
             țintă: {goal}
           </text>
         </g>

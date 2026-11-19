@@ -88,7 +88,7 @@ export function SimulatorPage() {
           })}
         </div>
         <div className="mt-3 flex gap-2">
-          <button className={`${player.running ? 'btn-wood' : 'btn-primary'} flex-1`} onClick={player.toggle}>
+          <button className={`${player.running ? 'btn-accent' : 'btn-primary'} flex-1`} onClick={player.toggle}>
             <Icon name={player.running ? 'stop' : 'play'} size={18} /> {player.running ? 'Stop' : 'Pornește ritmul'}
           </button>
           <button className={`btn-ghost ${metronome ? '!border-primary text-primary' : ''}`} onClick={() => setMetronome(!metronome)} aria-pressed={metronome}>

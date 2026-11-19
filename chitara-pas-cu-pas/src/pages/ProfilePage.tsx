@@ -28,12 +28,12 @@ export function ProfilePage() {
 
       <section className="card">
         <div className="flex items-center gap-4">
-          <div className="grid h-16 w-16 place-items-center rounded-2xl bg-wood text-2xl font-extrabold text-white dark:text-[#1b1713]">
+          <div className="grid h-16 w-16 place-items-center rounded-2xl bg-accent text-2xl font-extrabold text-white dark:text-[#0c2a2a]">
             {lvl.level}
           </div>
           <div className="flex-1">
             <div className="font-extrabold">Chitarist de nivel {lvl.level}</div>
-            <ProgressBar value={lvl.into / lvl.need} color="bg-wood" className="mt-2" />
+            <ProgressBar value={lvl.into / lvl.need} color="bg-accent" className="mt-2" />
             <div className="mt-1 text-sm text-muted">
               {state.xp} XP în total · încă {lvl.need - lvl.into} XP până la nivelul {lvl.level + 1}
             </div>
@@ -56,7 +56,7 @@ export function ProfilePage() {
               title={d}
               aria-label={`${d}${practiced.has(d) ? ': ai exersat' : ''}`}
               className={`aspect-square rounded-lg ${practiced.has(d) ? 'bg-primary' : 'bg-surface-2'} ${
-                d === today ? 'ring-2 ring-wood' : ''
+                d === today ? 'ring-2 ring-accent' : ''
               }`}
             />
           ))}
@@ -71,7 +71,7 @@ export function ProfilePage() {
           {BADGES.map((b) => {
             const got = state.badges[b.id]
             return (
-              <div key={b.id} className={`card !p-3 text-center ${got ? 'border-wood' : 'opacity-50 grayscale'}`} title={b.description}>
+              <div key={b.id} className={`card !p-3 text-center ${got ? 'border-accent' : 'opacity-50 grayscale'}`} title={b.description}>
                 <div className="text-3xl" aria-hidden>
                   {b.icon}
                 </div>

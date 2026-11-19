@@ -88,7 +88,7 @@ export function ChordDiagram({ chord, shapeIndex = 0, playable, hideName, showNo
       y1 = Math.min(...ys) - 11
       y2 = Math.max(...ys) + 11
     }
-    return <rect x={x1} y={y1} width={x2 - x1} height={y2 - y1} rx={7} fill="none" stroke="var(--wood)" strokeWidth={3} strokeDasharray="6 4" />
+    return <rect x={x1} y={y1} width={x2 - x1} height={y2 - y1} rx={7} fill="none" stroke="var(--accent)" strokeWidth={3} strokeDasharray="6 4" />
   }
 
   function play(mode: 'strum' | 'arp' = 'strum') {

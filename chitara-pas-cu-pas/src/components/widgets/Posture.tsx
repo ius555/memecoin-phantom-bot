@@ -41,7 +41,7 @@ const TABS = [
 function Badge({ x, y, n }: { x: number; y: number; n: number }) {
   return (
     <g>
-      <circle cx={x} cy={y} r={9} fill="var(--wood)" />
+      <circle cx={x} cy={y} r={9} fill="var(--accent)" />
       <text x={x} y={y + 4} textAnchor="middle" fontSize={11} fontWeight={800} fill="#fff">
         {n}
       </text>
@@ -94,7 +94,7 @@ function PickSvg() {
       {/* arătătorul (în spate, punctat) */}
       <path d="M40 60 C110 40 170 70 190 120 C196 136 186 150 170 146 C150 120 110 100 50 100Z" fill="#e8c4a0" opacity={0.55} stroke="#c7a07a" strokeDasharray="4 3" />
       {/* pana */}
-      <path d="M120 96c-26 0-46 8-46 26 0 26 26 60 46 74 20-14 46-48 46-74 0-18-20-26-46-26Z" fill="var(--wood)" />
+      <path d="M120 96c-26 0-46 8-46 26 0 26 26 60 46 74 20-14 46-48 46-74 0-18-20-26-46-26Z" fill="var(--accent)" />
       {/* degetul mare (deasupra) */}
       <path d="M30 120 C80 98 140 96 168 116 C180 126 172 140 158 138 C120 132 80 140 34 156Z" fill="#e8c4a0" stroke="#c7a07a" />
       <ellipse cx={160} cy={126} rx={10} ry={7} fill="#f3dcc2" />
@@ -156,7 +156,7 @@ export function Posture() {
       <ol className="mt-4 space-y-2">
         {current.checks.map((c, i) => (
           <li key={i} className="flex gap-3">
-            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-wood text-xs font-extrabold text-white">{i + 1}</span>
+            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent text-xs font-extrabold text-white">{i + 1}</span>
             <span>{c}</span>
           </li>
         ))}

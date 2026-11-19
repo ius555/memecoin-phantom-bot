@@ -42,3 +42,6 @@ export function isUnlocked(id: string, completed: Record<string, unknown>): bool
 export function nextLesson(completed: Record<string, unknown>): LessonRef | undefined {
   return ALL_LESSONS.find((r) => !completed[r.lesson.id])
 }
+
+/** Culoarea fiecărui nivel (harta cursului, insigne): de la turcoaz la portocaliu. */
+export const LEVEL_COLORS = ['#0f9d94', '#22a35a', '#e2475a', '#7c4ddb', '#2f7fe0', '#f0802a']

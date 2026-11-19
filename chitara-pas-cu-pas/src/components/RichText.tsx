@@ -17,7 +17,7 @@ export function RichText({ text }: { text: string }) {
             <ul key={i} className="mb-3 space-y-1.5 pl-1">
               {lines.map((l, j) => (
                 <li key={j} className="flex gap-2 leading-relaxed">
-                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-wood" aria-hidden />
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden />
                   <span>{inline(l.trim().slice(2))}</span>
                 </li>
               ))}

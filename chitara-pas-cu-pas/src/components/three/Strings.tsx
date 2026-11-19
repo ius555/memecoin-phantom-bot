@@ -1,24 +1,28 @@
 /**
- * Cele 6 corzi. Fiecare e o linie (Line2, groasă în pixeli, ieftină) cu câteva zeci de puncte,
- * ca să poată vibra: când coarda sună, punctele dintre tastă și căluș oscilează, iar culoarea se aprinde.
+ * Cele 6 corzi, ca cilindri metalici subțiri (bronz înfășurat pentru 6-5-4, oțel pentru 3-2-1).
  *
- * Corzile ascultă canalul de evenimente audio (audio/events.ts): orice notă cântată în aplicație,
- * de oriunde, face coarda corespunzătoare să vibreze exact când se aude.
+ * Vibrația se calculează pe placa video: un mic adaos la shader-ul materialului deplasează
+ * punctele corzii între tastă și căluș (modul fundamental + armonica a doua). Pe procesor
+ * actualizăm doar 3 numere pe coardă la fiecare cadru – foarte ieftin pe telefon.
+ * Coarda care sună se și „aprinde” (emisie caldă).
+ *
+ * Corzile ascultă canalul de evenimente audio (audio/events.ts): orice notă cântată în aplicație
+ * face coarda corespunzătoare să vibreze exact când se aude.
  */
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Line } from '@react-three/drei'
 import * as THREE from 'three'
-import type { Line2 } from 'three-stdlib'
-import { SCALE, STRING_Y, fretX, stringZ } from './geometry'
+import { SCALE, STRING_Y, fretX, stringRadius, stringZ } from './geometry'
 import { COLORS } from './materials'
+import { winding } from './textures'
 import { pegPostPosition } from './GuitarModel'
 import { onGuitarEvent } from '../../audio/events'
 import { getAudio } from '../../audio/context'
 
-const POINTS = 48
 const DECAY = 2.4 // cât de repede se stinge vibrația vizuală (1/s)
 const VIS_HZ = 14 // frecvența vibrației desenate (cea reală ar fi prea rapidă pentru ochi)
+const X0 = -0.5 // capătul de la prăguș
 
 interface Hit {
   when: number
@@ -33,22 +37,74 @@ export function audioNow(): number {
   return ctx.currentTime - lat
 }
 
+interface StringUniforms {
+  uAmp: { value: number }
+  uPhase: { value: number }
+  uStart: { value: number }
+}
+
+/** Material metalic cu deplasare în shader (vibrația) și emisie (strălucirea). */
+function stringMaterial(s: number): { mat: THREE.MeshStandardMaterial; uniforms: StringUniforms } {
+  const wound = s < 3
+  const mat = new THREE.MeshStandardMaterial({
+    color: wound ? COLORS.woundString : COLORS.plainString,
+    metalness: 1,
+    roughness: wound ? 0.42 : 0.22,
+    emissive: '#ffd9a0',
+    emissiveIntensity: 0,
+  })
+  if (wound) {
+    const t = winding().clone()
+    t.needsUpdate = true
+    t.repeat.set(1, 420)
+    mat.map = t
+  }
+  const uniforms: StringUniforms = { uAmp: { value: 0 }, uPhase: { value: 0 }, uStart: { value: 0 } }
+  mat.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, uniforms)
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nuniform float uAmp;\nuniform float uPhase;\nuniform float uStart;')
+      .replace(
+        '#include <begin_vertex>',
+        `#include <begin_vertex>
+        // uv.y = 0 la prăguș, 1 la căluș; vibrează doar porțiunea dintre tastă și căluș
+        float u = uv.y;
+        if (u > uStart && uAmp > 0.0) {
+          float k = (u - uStart) / max(0.0001, 1.0 - uStart);
+          transformed.y += uAmp * (sin(3.14159265 * k) * sin(uPhase) + 0.25 * sin(6.2831853 * k) * sin(uPhase * 1.7));
+        }`,
+      )
+  }
+  // fiecare coardă are programul ei de shader (uniforme proprii)
+  mat.customProgramCacheKey = () => `string-${s}`
+  return { mat, uniforms }
+}
+
+/** Geometria unei corzi: cilindru culcat de-a lungul gâtului, ușor oblic (corzile se depărtează spre căluș). */
+function stringGeometry(s: number): THREE.BufferGeometry {
+  const z0 = stringZ(s, X0)
+  const z1 = stringZ(s, SCALE)
+  const len = Math.hypot(SCALE - X0, z1 - z0)
+  const g = new THREE.CylinderGeometry(stringRadius(s), stringRadius(s), len, 6, 64, true)
+  g.rotateZ(-Math.PI / 2) // axa cilindrului: de la prăguș (−x) la căluș (+x)
+  g.rotateY(-Math.atan2(z1 - z0, SCALE - X0))
+  g.translate((X0 + SCALE) / 2, STRING_Y, (z0 + z1) / 2)
+  return g
+}
+
 export function Strings({ onPluck }: { onPluck?: (s: number) => void }) {
   const invalidate = useThree((s) => s.invalidate)
-  const lines = useRef<(Line2 | null)[]>([])
   const hits = useRef<Hit[][]>([[], [], [], [], [], []])
-  const glow = useRef<number[]>([0, 0, 0, 0, 0, 0])
+  const strings = useMemo(() => [0, 1, 2, 3, 4, 5].map((s) => ({ geo: stringGeometry(s), ...stringMaterial(s) })), [])
 
-  // punctele de repaus ale fiecărei corzi (de la prăguș la căluș)
-  const rest = useMemo(
-    () =>
-      Array.from({ length: 6 }, (_, s) =>
-        Array.from({ length: POINTS }, (_, i) => {
-          const x = -0.5 + ((SCALE + 0.5) * i) / (POINTS - 1)
-          return new THREE.Vector3(x, STRING_Y, stringZ(s, x))
-        }),
-      ),
-    [],
+  useEffect(
+    () => () => {
+      strings.forEach((x) => {
+        x.geo.dispose()
+        x.mat.dispose()
+      })
+    },
+    [strings],
   )
 
   // ascultăm notele cântate și pornim animația
@@ -56,73 +112,37 @@ export function Strings({ onPluck }: { onPluck?: (s: number) => void }) {
     () =>
       onGuitarEvent((e) => {
         if (e.type !== 'note') return
-        hits.current[e.string] = [...hits.current[e.string].slice(-2), { when: e.when, fret: e.fret, amp: 0.25 + e.velocity * 0.35 }]
+        hits.current[e.string] = [...hits.current[e.string].slice(-2), { when: e.when, fret: e.fret, amp: 0.22 + e.velocity * 0.3 }]
         invalidate()
       }),
     [invalidate],
   )
 
-  const base = useMemo(() => [0, 1, 2, 3, 4, 5].map((s) => new THREE.Color(s < 3 ? COLORS.woundString : COLORS.plainString)), [])
-  const hot = useMemo(() => new THREE.Color('#fff6e3'), [])
-  const tmp = useMemo(() => new THREE.Color(), [])
-  const flatArr = useMemo(() => new Float32Array(POINTS * 3), [])
-
   useFrame(() => {
     const now = audioNow()
     let busy = false
     for (let s = 0; s < 6; s++) {
-      const line = lines.current[s]
-      if (!line) continue
+      const { uniforms, mat } = strings[s]
       // doar ultima lovitură care a început deja contează
       const active = hits.current[s].filter((h) => h.when <= now).pop()
-      const pending = hits.current[s].some((h) => h.when > now)
+      if (hits.current[s].some((h) => h.when > now)) busy = true
       let amp = 0
-      let start = 0
       if (active) {
         const t = now - active.when
         amp = active.amp * Math.exp(-DECAY * t)
         if (amp < 0.004) amp = 0
-        start = active.fret > 0 ? fretX(active.fret) : 0
-        if (amp > 0) {
-          const len = SCALE - start
-          for (let i = 0; i < POINTS; i++) {
-            const p = rest[s][i]
-            let dy = 0
-            if (p.x > start && p.x < SCALE) {
-              const u = (p.x - start) / len
-              // modul fundamental (o "burtă" la mijloc) + puțin din al doilea mod
-              dy = amp * (Math.sin(Math.PI * u) * Math.sin(2 * Math.PI * VIS_HZ * t) + 0.25 * Math.sin(2 * Math.PI * u) * Math.sin(2 * Math.PI * VIS_HZ * 1.7 * t))
-            }
-            flatArr[i * 3] = p.x
-            flatArr[i * 3 + 1] = p.y + dy
-            flatArr[i * 3 + 2] = p.z
-          }
-          line.geometry.setPositions(flatArr)
-          busy = true
-        }
+        uniforms.uPhase.value = 2 * Math.PI * VIS_HZ * t
+        // porțiunea care vibrează începe la tasta apăsată
+        uniforms.uStart.value = active.fret > 0 ? (fretX(active.fret) - X0) / (SCALE - X0) : 0
       }
-      if (!amp && glow.current[s] > 0) {
-        // revenire la poziția de repaus
-        for (let i = 0; i < POINTS; i++) {
-          flatArr[i * 3] = rest[s][i].x
-          flatArr[i * 3 + 1] = rest[s][i].y
-          flatArr[i * 3 + 2] = rest[s][i].z
-        }
-        line.geometry.setPositions(flatArr)
-      }
-      // strălucirea urmează amplitudinea
-      const g = Math.min(1, amp * 4)
-      glow.current[s] = g
-      const mat = line.material
-      tmp.copy(base[s]).lerp(hot, g)
-      mat.color.copy(tmp)
-      mat.linewidth = (s < 3 ? 3.2 - s * 0.35 : 2.2 - (s - 3) * 0.25) * (1 + g * 0.8)
-      if (pending) busy = true
+      uniforms.uAmp.value = amp
+      mat.emissiveIntensity = Math.min(1.2, amp * 4.5)
+      if (amp > 0) busy = true
     }
     if (busy) invalidate()
   })
 
-  // corzile pe cap, de la prăguș la chei (statice)
+  // corzile pe cap, de la prăguș la chei (statice, subțiri)
   const headLines = useMemo(() => [0, 1, 2, 3, 4, 5].map((s) => [new THREE.Vector3(-0.5, STRING_Y - 0.1, stringZ(s, 0)), pegPostPosition(s)]), [])
 
   function onTap(e: ThreeEvent<MouseEvent>, s: number) {
@@ -134,36 +154,26 @@ export function Strings({ onPluck }: { onPluck?: (s: number) => void }) {
 
   return (
     <group>
-      {rest.map((pts, s) => (
-        <Line
-          key={s}
-          ref={(l) => {
-            lines.current[s] = l as unknown as Line2 | null
-          }}
-          points={pts}
-          color={s < 3 ? COLORS.woundString : COLORS.plainString}
-          lineWidth={s < 3 ? 3.2 - s * 0.35 : 2.2 - (s - 3) * 0.25}
-        />
+      {strings.map((x, s) => (
+        <mesh key={s} geometry={x.geo} material={x.mat} renderOrder={2} />
       ))}
       {/* toate corzile de pe cap într-un singur obiect (un singur apel de desenare) */}
-      <Line points={headLines.flat()} segments color={COLORS.plainString} lineWidth={1.4} />
+      <Line points={headLines.flat()} segments color="#bdb6a8" lineWidth={1.3} />
       {/* zone invizibile, mai groase, ca să poți atinge o coardă cu degetul */}
       {[0, 1, 2, 3, 4, 5].map((s) => {
-        const x0 = 0
-        const z0 = stringZ(s, x0)
+        const z0 = stringZ(s, 0)
         const z1 = stringZ(s, SCALE)
-        const len = SCALE
-        const angle = Math.atan2(z1 - z0, len)
+        const angle = Math.atan2(z1 - z0, SCALE)
         return (
           <mesh
             key={`hit${s}`}
-            position={[len / 2, STRING_Y, (z0 + z1) / 2]}
+            position={[SCALE / 2, STRING_Y, (z0 + z1) / 2]}
             rotation={[0, -angle, 0]}
             onClick={(e) => onTap(e, s)}
             onPointerOver={() => (document.body.style.cursor = 'pointer')}
             onPointerOut={() => (document.body.style.cursor = '')}
           >
-            <boxGeometry args={[len, 1.2, 0.92]} />
+            <boxGeometry args={[SCALE, 1.2, 0.92]} />
             <meshBasicMaterial visible={false} />
           </mesh>
         )

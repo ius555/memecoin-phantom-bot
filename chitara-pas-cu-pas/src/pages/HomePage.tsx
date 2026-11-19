@@ -46,9 +46,9 @@ export function HomePage() {
 
       {/* statistici */}
       <div className="grid grid-cols-3 gap-3">
-        <Stat icon="🔥" value={streak} label={streak === 1 ? 'zi la rând' : 'zile la rând'} highlight={practicedToday} />
-        <Stat icon="⭐" value={state.xp} label="XP" />
-        <Stat icon="🎓" value={`${doneCount}/${ALL_LESSONS.length}`} label="lecții" />
+        <Stat icon="🔥" value={streak} label={streak === 1 ? 'zi la rând' : 'zile la rând'} tone="sun" highlight={practicedToday} />
+        <Stat icon="⭐" value={state.xp} label="XP" tone="violet" />
+        <Stat icon="🎓" value={`${doneCount}/${ALL_LESSONS.length}`} label="lecții" tone="accent" />
       </div>
 
       <div className="card">
@@ -58,14 +58,14 @@ export function HomePage() {
             {lvl.into}/{lvl.need} XP
           </span>
         </div>
-        <ProgressBar value={lvl.into / lvl.need} color="bg-wood" />
+        <ProgressBar value={lvl.into / lvl.need} color="bg-gradient-to-r from-accent via-violet to-primary" />
       </div>
 
       {/* lecția următoare */}
       {next ? (
         <Link
           to={`/curs/${next.lesson.id}`}
-          className="card block overflow-hidden !border-0 !bg-primary !p-0 text-primary-ink transition active:scale-[0.99]"
+          className="card bg-hero block overflow-hidden !border-0 !p-0 text-white shadow-lg transition active:scale-[0.99]"
         >
           <div className="flex items-center gap-4 p-5">
             <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/15 text-3xl" aria-hidden>
@@ -88,9 +88,27 @@ export function HomePage() {
         </div>
       )}
 
+      {/* funcțiile noi: melodia ta + simulatorul 3D */}
+      <div className="grid grid-cols-2 gap-3">
+        <Link to="/cantece/import" className="card flex flex-col gap-1 !border-0 !bg-accent text-white shadow-md transition active:scale-[0.98] dark:text-[#0c2a2a]">
+          <span className="text-3xl" aria-hidden>
+            🎧
+          </span>
+          <span className="font-extrabold leading-tight">Încarcă o melodie</span>
+          <span className="text-xs font-semibold opacity-90">vezi acordurile și degetele</span>
+        </Link>
+        <Link to="/simulator" className="card flex flex-col gap-1 !border-0 !bg-violet text-white shadow-md transition active:scale-[0.98] dark:text-[#1a1236]">
+          <span className="text-3xl" aria-hidden>
+            🎸
+          </span>
+          <span className="font-extrabold leading-tight">Simulator 3D</span>
+          <span className="text-xs font-semibold opacity-90">orice acord, pe chitară</span>
+        </Link>
+      </div>
+
       {/* rutina de azi */}
       <Link to="/rutina" className="card flex items-center gap-4 transition hover:border-primary">
-        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-wood-soft text-2xl" aria-hidden>
+        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-sun-soft text-2xl" aria-hidden>
           🗓️
         </div>
         <div className="flex-1">
@@ -107,20 +125,20 @@ export function HomePage() {
       <div>
         <h2 className="mb-3 text-lg font-extrabold">Unelte rapide</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Quick to="/exersare/acordor" icon="🎚️" label="Acordor" />
-          <Quick to="/exersare/metronom" icon="⏱️" label="Metronom" />
-          <Quick to="/acorduri" icon="🎼" label="Acorduri" />
-          <Quick to="/cantece" icon="🎶" label="Cântece" />
+          <Quick to="/exersare/acordor" icon="🎚️" label="Acordor" tone="bg-accent-soft" />
+          <Quick to="/exersare/metronom" icon="⏱️" label="Metronom" tone="bg-violet-soft" />
+          <Quick to="/acorduri" icon="🎼" label="Acorduri" tone="bg-primary-soft" />
+          <Quick to="/cantece" icon="🎶" label="Cântece" tone="bg-sun-soft" />
         </div>
       </div>
 
       {/* sfatul zilei */}
-      <Link to="/sfaturi" className="card flex gap-3 border-dashed transition hover:border-primary">
+      <Link to="/sfaturi" className="card flex gap-3 border-dashed !border-violet/40 transition hover:border-primary">
         <span className="text-2xl" aria-hidden>
           💡
         </span>
         <div>
-          <div className="text-xs font-extrabold tracking-wider text-wood uppercase">Sfatul zilei</div>
+          <div className="text-xs font-extrabold tracking-wider text-violet uppercase">Sfatul zilei</div>
           <div className="font-bold">{tip.title}</div>
           <p className="mt-1 line-clamp-2 text-sm text-muted">{tip.items[0]}</p>
         </div>
@@ -129,9 +147,15 @@ export function HomePage() {
   )
 }
 
-function Stat({ icon, value, label, highlight }: { icon: string; value: number | string; label: string; highlight?: boolean }) {
+const TONES = {
+  sun: 'bg-sun-soft border-sun/40',
+  violet: 'bg-violet-soft border-violet/30',
+  accent: 'bg-accent-soft border-accent/30',
+}
+
+function Stat({ icon, value, label, highlight, tone }: { icon: string; value: number | string; label: string; highlight?: boolean; tone: keyof typeof TONES }) {
   return (
-    <div className={`card !p-3 text-center ${highlight ? 'border-wood bg-wood-soft' : ''}`}>
+    <div className={`card !p-3 text-center ${TONES[tone]} ${highlight ? 'ring-2 ring-sun' : ''}`}>
       <div className="text-xl" aria-hidden>
         {icon}
       </div>
@@ -141,10 +165,10 @@ function Stat({ icon, value, label, highlight }: { icon: string; value: number |
   )
 }
 
-function Quick({ to, icon, label }: { to: string; icon: string; label: string }) {
+function Quick({ to, icon, label, tone }: { to: string; icon: string; label: string; tone: string }) {
   return (
     <Link to={to} className="card flex flex-col items-center gap-1 !py-4 font-bold transition hover:border-primary active:scale-[0.97]">
-      <span className="text-3xl" aria-hidden>
+      <span className={`grid h-14 w-14 place-items-center rounded-2xl text-3xl ${tone}`} aria-hidden>
         {icon}
       </span>
       {label}

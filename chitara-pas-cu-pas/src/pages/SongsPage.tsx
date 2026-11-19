@@ -17,10 +17,20 @@ export function SongsPage() {
   return (
     <div>
       <PageHeader back={true} title="Cântece" subtitle="Cântece populare din domeniul public și compoziții originale." />
+      <Link to="/cantece/import" className="card bg-hero mb-4 flex items-center gap-3 !border-0 text-white shadow-md">
+        <span className="text-3xl" aria-hidden>
+          🎧
+        </span>
+        <span className="flex-1">
+          <span className="block text-lg font-extrabold">Încarcă melodia ta</span>
+          <span className="block text-sm opacity-90">Un fișier audio sau versuri cu acorduri – îți arăt acordurile și degetele.</span>
+        </span>
+        <Icon name="next" />
+      </Link>
       <div className="space-y-3">
         {SONGS.map((s) => (
           <Link key={s.id} to={`/cantece/${s.id}`} className="card flex items-center gap-4 transition hover:border-primary active:scale-[0.99]">
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-wood-soft text-2xl" aria-hidden>
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-accent-soft text-2xl" aria-hidden>
               {state.songsPracticed.includes(s.id) ? '✅' : '🎵'}
             </span>
             <span className="min-w-0 flex-1">
@@ -85,7 +95,7 @@ export function SongPage() {
           ))}
         </div>
         <div className="mt-3 flex items-center gap-2">
-          <button className={`${player.running ? 'btn-wood' : 'btn-primary'} flex-1`} onClick={player.toggle}>
+          <button className={`${player.running ? 'btn-accent' : 'btn-primary'} flex-1`} onClick={player.toggle}>
             <Icon name={player.running ? 'stop' : 'play'} size={18} /> {player.running ? 'Stop' : 'Cântă cu acompaniament'}
           </button>
         </div>
@@ -98,7 +108,7 @@ export function SongPage() {
       <div className="card space-y-5">
         {song.sections.map((sec) => (
           <section key={sec.name}>
-            <h3 className="mb-2 text-xs font-extrabold tracking-wider text-wood uppercase">{sec.name}</h3>
+            <h3 className="mb-2 text-xs font-extrabold tracking-wider text-accent uppercase">{sec.name}</h3>
             {sec.lines.map((line, li) => (
               <p key={li} className="mb-2 flex flex-wrap items-end leading-tight">
                 {parseLine(line).map((seg, si) => {

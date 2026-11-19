@@ -29,7 +29,7 @@ export function ChordReading() {
         highlight={s.focus === 'play' ? undefined : (s.focus as 'strings' | 'frets' | 'dots' | 'top')}
       />
       <div>
-        <div className="text-xs font-extrabold tracking-wider text-wood uppercase">
+        <div className="text-xs font-extrabold tracking-wider text-accent uppercase">
           Pasul {step + 1} din {CHORD_STEPS.length}
         </div>
         <h4 className="h-display text-xl">{s.title}</h4>

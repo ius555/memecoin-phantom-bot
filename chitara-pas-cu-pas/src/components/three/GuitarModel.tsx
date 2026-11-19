@@ -3,6 +3,8 @@
  * corp (contur Bézier extrudat), gura cu rozeta, grif, taste, prăguș, căluș, cap cu chei.
  * Corzile sunt desenate separat (Strings.tsx), pentru că ele se animă.
  *
+ * Stil realist: materiale PBR cu texturi procedurale de lemn (materials.ts, textures.ts).
+ *
  * Performanță: toate piesele statice care au același material sunt UNITE într-o singură
  * geometrie (mergeGeometries). Rezultatul: ~14 apeluri de desenare pentru toată chitara,
  * în loc de ~80 – important pe telefon. Geometriile au puține segmente (low-poly).
@@ -11,7 +13,7 @@ import { useMemo } from 'react'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { BODY_DEPTH, BODY_LEN, BODY_START, FRET_COUNT, SCALE, SOUNDHOLE, STRING_Y, TOP_Y, fretX, neckWidth, stringZ } from './geometry'
-import { COLORS, flat, toon } from './materials'
+import { material, type MaterialKey } from './materials'
 
 /** Conturul corpului, în planul (u = de-a lungul, v = de-a curmezișul). */
 function bodyShape(): THREE.Shape {
@@ -51,8 +53,8 @@ type Vec3 = [number, number, number]
 
 /** Colecționează piese (geometrie + transformare) pe chei de material, apoi le unește. */
 class PartList {
-  parts = new Map<string, THREE.BufferGeometry[]>()
-  add(material: string, geo: THREE.BufferGeometry, pos: Vec3 = [0, 0, 0], rot: Vec3 = [0, 0, 0], scale: Vec3 = [1, 1, 1], parent?: THREE.Matrix4) {
+  parts = new Map<MaterialKey, THREE.BufferGeometry[]>()
+  add(material: MaterialKey, geo: THREE.BufferGeometry, pos: Vec3 = [0, 0, 0], rot: Vec3 = [0, 0, 0], scale: Vec3 = [1, 1, 1], parent?: THREE.Matrix4) {
     const m = new THREE.Matrix4().compose(new THREE.Vector3(...pos), new THREE.Quaternion().setFromEuler(new THREE.Euler(...rot)), new THREE.Vector3(...scale))
     if (parent) m.premultiply(parent)
     let g = geo.clone().applyMatrix4(m)
@@ -64,7 +66,7 @@ class PartList {
     list.push(g)
     this.parts.set(material, list)
   }
-  build(): { material: string; geometry: THREE.BufferGeometry }[] {
+  build(): { material: MaterialKey; geometry: THREE.BufferGeometry }[] {
     return [...this.parts.entries()].map(([material, list]) => ({ material, geometry: mergeGeometries(list, false)! }))
   }
 }
@@ -76,35 +78,41 @@ function buildGuitar() {
   // ---- corpul
   const body = new THREE.ExtrudeGeometry(shape, { depth: BODY_DEPTH, bevelEnabled: true, bevelThickness: 0.6, bevelSize: 0.6, bevelSegments: 1, curveSegments: 10 })
   body.rotateX(-Math.PI / 2)
-  P.add(`toon:${COLORS.sides}`, body, [BODY_START, TOP_Y - BODY_DEPTH, 0])
+  P.add('sides', body, [BODY_START, TOP_Y - BODY_DEPTH, 0])
+  // filetul crem de pe margine: un strat întreg sub fața (puțin mai mică) a plăcii
+  const rim = new THREE.ShapeGeometry(shape, 10)
+  rim.rotateX(-Math.PI / 2)
+  P.add('binding', rim, [BODY_START, TOP_Y + 0.61, 0])
   const top = new THREE.ShapeGeometry(shape, 10)
   top.rotateX(-Math.PI / 2)
-  P.add(`toon:${COLORS.top}`, top, [BODY_START, TOP_Y + 0.62, 0], [0, 0, 0], [0.985, 1, 0.97])
+  P.add('top', top, [BODY_START, TOP_Y + 0.62, 0], [0, 0, 0], [0.985, 1, 0.97])
   // gura și rozeta (verdele salvie al aplicației)
   const flatDown: Vec3 = [-Math.PI / 2, 0, 0]
-  P.add(`flat:${COLORS.rosette}`, new THREE.RingGeometry(SOUNDHOLE.r + 0.3, SOUNDHOLE.r + 1.3, 28), [SOUNDHOLE.x, TOP_Y + 0.66, 0], flatDown)
-  P.add(`flat:${COLORS.hole}`, new THREE.CircleGeometry(SOUNDHOLE.r, 28), [SOUNDHOLE.x, TOP_Y + 0.67, 0], flatDown)
+  P.add('rosette', new THREE.RingGeometry(SOUNDHOLE.r + 0.15, SOUNDHOLE.r + 1.6, 48), [SOUNDHOLE.x, TOP_Y + 0.66, 0], flatDown)
+  P.add('hole', new THREE.CircleGeometry(SOUNDHOLE.r + 0.16, 40), [SOUNDHOLE.x, TOP_Y + 0.67, 0], flatDown)
   // placa de protecție, în formă de picătură
-  P.add(`toon:${COLORS.guard}`, new THREE.CircleGeometry(3.2, 12), [SOUNDHOLE.x + 3, TOP_Y + 0.65, -SOUNDHOLE.r - 3], [-Math.PI / 2, 0, 0.5], [1, 1.5, 1])
+  P.add('guard', new THREE.CircleGeometry(3.2, 12), [SOUNDHOLE.x + 3, TOP_Y + 0.65, -SOUNDHOLE.r - 3], [-Math.PI / 2, 0, 0.5], [1, 1.5, 1])
   // căluşul, ştegul și pinii
-  P.add(`toon:${COLORS.bridge}`, new THREE.BoxGeometry(3, 0.9, 15), [SCALE + 1.4, TOP_Y + 1.1, 0])
-  P.add(`toon:${COLORS.bone}`, new THREE.BoxGeometry(0.35, 0.5, 7.2), [SCALE, STRING_Y - 0.25, 0])
-  const pin = new THREE.CylinderGeometry(0.28, 0.28, 0.3, 8)
-  for (let s = 0; s < 6; s++) P.add(`toon:${COLORS.bone}`, pin, [SCALE + 2.2, TOP_Y + 1.6, stringZ(s, SCALE) * 1.05])
+  P.add('bridge', new THREE.BoxGeometry(3, 0.9, 15), [SCALE + 1.4, TOP_Y + 1.1, 0])
+  P.add('bone', new THREE.BoxGeometry(0.35, 0.5, 7.2), [SCALE, STRING_Y - 0.25, 0])
+  const pin = new THREE.CylinderGeometry(0.28, 0.24, 0.3, 10)
+  for (let s = 0; s < 6; s++) P.add('bone', pin, [SCALE + 2.2, TOP_Y + 1.6, stringZ(s, SCALE) * 1.05])
 
   // ---- gâtul, grifura, tastele
   const fbEnd = fretX(FRET_COUNT) + 0.8
-  P.add(`toon:${COLORS.neck}`, taperGeometry(-0.4, BODY_START + 2, neckWidth(0), neckWidth(BODY_START), 2.2), [0, -2.8, 0])
-  P.add(`toon:${COLORS.fretboard}`, taperGeometry(-0.2, fbEnd, neckWidth(0), neckWidth(fbEnd), 0.6), [0, -0.6, 0])
+  P.add('neck', taperGeometry(-0.4, BODY_START + 2, neckWidth(0), neckWidth(BODY_START), 2.2), [0, -2.8, 0])
+  P.add('fretboard', taperGeometry(-0.2, fbEnd, neckWidth(0), neckWidth(fbEnd), 0.6), [0, -0.6, 0])
   for (let i = 1; i <= FRET_COUNT; i++) {
     const x = fretX(i)
-    P.add(`toon:${COLORS.fret}`, new THREE.BoxGeometry(0.18, 0.12, neckWidth(x) - 0.1), [x, 0.04, 0])
+    P.add('fret', new THREE.CylinderGeometry(0.1, 0.1, neckWidth(x) - 0.1, 8), [x, 0.02, 0], [Math.PI / 2, 0, 0])
   }
   const dot = new THREE.CircleGeometry(0.38, 12)
-  for (const n of [3, 5, 7, 9, 15, 17]) P.add(`flat:${COLORS.inlay}`, dot, [(fretX(n) + fretX(n - 1)) / 2, 0.01, 0], flatDown)
-  for (const z of [0.9, -0.9]) P.add(`flat:${COLORS.inlay}`, dot, [(fretX(12) + fretX(11)) / 2, 0.01, z], flatDown)
+  for (const n of [3, 5, 7, 9, 15, 17]) P.add('inlay', dot, [(fretX(n) + fretX(n - 1)) / 2, 0.01, 0], flatDown)
+  for (const z of [0.9, -0.9]) P.add('inlay', dot, [(fretX(12) + fretX(11)) / 2, 0.01, z], flatDown)
   // prăguşul
-  P.add(`toon:${COLORS.bone}`, new THREE.BoxGeometry(0.5, 0.75, neckWidth(0)), [-0.25, 0.15, 0])
+  P.add('bone', new THREE.BoxGeometry(0.5, 0.75, neckWidth(0)), [-0.25, 0.15, 0])
+  // călcâiul gâtului, unde se lipește de corp
+  P.add('neck', new THREE.BoxGeometry(3, 6, neckWidth(BODY_START) - 0.6), [BODY_START + 0.6, -4.8, 0])
 
   // ---- capul (înclinat), cu axele și cheile
   const head = new THREE.Matrix4().compose(HEAD_OFFSET, new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, HEAD_TILT)), new THREE.Vector3(1, 1, 1))
@@ -116,16 +124,16 @@ function buildGuitar() {
   hs.closePath()
   const headstock = new THREE.ExtrudeGeometry(hs, { depth: 1.4, bevelEnabled: false, curveSegments: 6 })
   headstock.rotateX(-Math.PI / 2)
-  P.add(`toon:${COLORS.headstock}`, headstock, [0, -1.4, 0], [0, 0, 0], [1, 1, 1], head)
+  P.add('headstock', headstock, [0, -1.4, 0], [0, 0, 0], [1, 1, 1], head)
   const post = new THREE.CylinderGeometry(0.3, 0.3, 1.1, 8)
   const shaft = new THREE.CylinderGeometry(0.22, 0.22, 2, 6)
-  const button = new THREE.SphereGeometry(1, 10, 6)
+  const button = new THREE.SphereGeometry(1, 14, 10)
   for (const x of PEG_X)
     for (const side of [1, -1]) {
       const z = side * 2.6
-      P.add(`toon:${COLORS.post}`, post, [x, 0.5, z], [0, 0, 0], [1, 1, 1], head)
-      P.add(`toon:${COLORS.post}`, shaft, [x, -0.6, z + side * 1.9], [Math.PI / 2, 0, 0], [1, 1, 1], head)
-      P.add(`toon:${COLORS.peg}`, button, [x, -0.6, z + side * 3.3], [0, 0, 0], [1.2, 0.5, 0.9], head)
+      P.add('post', post, [x, 0.5, z], [0, 0, 0], [1, 1, 1], head)
+      P.add('post', shaft, [x, -0.6, z + side * 1.9], [Math.PI / 2, 0, 0], [1, 1, 1], head)
+      P.add('peg', button, [x, -0.6, z + side * 3.3], [0, 0, 0], [1.2, 0.5, 0.9], head)
     }
   return P.build()
 }
@@ -134,10 +142,9 @@ export function GuitarModel() {
   const meshes = useMemo(buildGuitar, [])
   return (
     <group>
-      {meshes.map(({ material, geometry }) => {
-        const [kind, color] = material.split(':')
-        return <mesh key={material} geometry={geometry} material={kind === 'flat' ? flat(color) : toon(color)} />
-      })}
+      {meshes.map(({ material: key, geometry }) => (
+        <mesh key={key} geometry={geometry} material={material(key)} />
+      ))}
     </group>
   )
 }

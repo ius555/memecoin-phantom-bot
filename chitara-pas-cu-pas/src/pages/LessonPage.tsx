@@ -48,7 +48,7 @@ export function LessonPage() {
         title={lesson.title}
         subtitle={
           <span className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="font-bold text-wood">
+            <span className="font-bold text-accent">
               Nivelul {level.number} · Lecția {number}
             </span>
             <span>· {lesson.minutes} min</span>
@@ -63,7 +63,7 @@ export function LessonPage() {
         ))}
       </div>
 
-      <section className="card mt-8 border-2 border-wood/40" aria-labelledby="quiz-t">
+      <section className="card mt-8 border-2 border-accent/40" aria-labelledby="quiz-t">
         <h2 id="quiz-t" className="h-display mb-4 flex items-center gap-2 text-xl">
           <span aria-hidden>📝</span> Mini-test
         </h2>

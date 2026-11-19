@@ -5,14 +5,39 @@ tabletă și calculator, se poate „instala” pe ecranul telefonului și func�
 
 - **Curs structurat**: 21 de lecții pe 6 niveluri, fiecare cu explicație, diagramă SVG, sunet,
   exercițiu practic și mini-test. Lecția următoare se deblochează după ce o treci pe cea curentă.
-- **Unelte**: acordor cu microfonul, metronom, bibliotecă de acorduri (36 de acorduri, cu variante),
+- **Încarcă o melodie**: alegi un fișier audio de pe telefon (sau lipești versuri cu acorduri), iar aplicația
+  îți arată acordurile și cum ții degetele, sincronizat cu melodia, plus un capodastru recomandat.
+- **Unelte**: acordor cu microfonul, metronom, bibliotecă de acorduri (46 de acorduri – toate cele 24 majore
+  și minore, plus 7, maj7, sus – cu variante),
   editor de progresii, jocul schimbărilor, test de auz, verificarea acordului cu microfonul,
   „one-minute change” cu grafic, cântece, rutină zilnică, sfaturi.
-- **Simulator 3D**: chitară acustică stilizată (cartoon, low-poly) pe care vezi orice acord din 3 unghiuri,
+- **Simulator 3D**: chitară acustică realistă (lemn, metal, lac) pe care vezi orice acord din 3 unghiuri,
   cu degetele animate, corzi care vibrează și o pană care urmează ritmul (vezi secțiunea de mai jos).
 - **Gamificare**: XP, nivel de chitarist, serie de zile consecutive (🔥), 17 insigne.
 - **Fără cont**: progresul se salvează în `localStorage`, pe dispozitiv.
-- Temă **deschisă / întunecată / automată** și **mod pentru stângaci** (diagramele se oglindesc).
+- Temă **deschisă / întunecată / automată**, în culori vii (coral, turcoaz, violet), și **mod pentru stângaci**
+  (diagramele se oglindesc).
+
+## Încarcă o melodie
+
+Ecranul **Cântece → Încarcă melodia ta** (și cardul de pe pagina de start), două variante:
+
+1. **Fișier audio** (mp3, m4a, wav, ogg, maxim 12 minute). Fișierul nu pleacă de pe dispozitiv: e decodat
+   în browser, convertit la mono 11 025 Hz, apoi analizat (`src/audio/analysis.ts`):
+   FFT pe ferestre de 0,37 s → energia pe semitonuri, cu fondul scăzut și armonicele notelor grave
+   compensate → chromagramă + chromagramă de bas → potrivire cu cele 24 de acorduri majore/minore →
+   algoritmul Viterbi alege succesiunea cea mai probabilă → segmente cu momentul de început.
+   În timpul redării: acordul curent (pe chitara 3D sau pe diagramă), următoarele acorduri și o bandă
+   colorată pe care atingi orice acord ca să sari la el.
+2. **Text cu acorduri**: lipești versuri de pe orice site de acorduri (acordurile pe rândul de deasupra,
+   sau `[Am]` în text). Se recunosc și notațiile `Hm`, `C/E`, `Asus4`, `E7`, secțiunile „Refren”, „Intro: …”.
+   Apoi le cânți cu acompaniamentul aplicației (ritm și tempo la alegere).
+
+**Capodastru**: aplicația caută tasta (0–7) la care acordurile devin cele mai ușoare (ex. o melodie în
+Bb – F – Gm – Eb devine, cu capodastrul la tasta 3, G – D – Em – C) și afișează formele transpuse.
+
+Detectarea e aproximativă: în testele cu progresii sintetizate (chitară + bas + tobe + zgomot) a avut
+~97–99% potrivire, dar pe mixaje reale foarte încărcate va greși mai des.
 
 ## Simulatorul 3D
 
@@ -20,15 +45,19 @@ Ecranul **Simulator** (în meniu) și comutatorul **2D / 3D** din lecții, din B
 și din Editorul de progresii afișează acordurile pe o chitară 3D.
 
 - **Model propriu**, construit doar din forme simple în Three.js (corp din curbe Bézier extrudate,
-  grif conic, 19 taste la pozițiile reale, cap cu chei) – fără modele descărcate, fără mâini 3D.
-  Stil „cartoon” (MeshToonMaterial cu 3 trepte de lumină), în culorile aplicației.
+  grif conic, 19 taste la pozițiile reale, cap cu chei) – fără modele descărcate, fără mâini realiste.
+- **Aspect realist**: materiale PBR (`MeshStandardMaterial`) cu texturi de lemn desenate procedural
+  (`textures.ts`: molid pe față, palisandru pe grif/spate, mahon pe gât), lac lucios, taste și chei
+  metalice, filet crem, rozetă mozaic, placă de baga; reflexii dintr-un mediu de lumină generat local
+  (`RoomEnvironment`), fără nicio descărcare.
 - **Aceleași date ca diagramele 2D**: pozițiile, degetele și barré-urile vin din `src/music/chords.ts`
   (inclusiv `findBarres`); culorile degetelor vin din aceleași variabile CSS (`--f1`…`--f4`).
-- **Degetele**: buline colorate cu cifra 1–4 pe tastele corecte; la apariție cad pe rând, iar la
-  schimbarea acordului se mută în arc spre noua poziție. Barré = bulină alungită peste corzi.
+- **Degetele**: degete stilizate (tuburi colorate, cifra 1–4 deasupra) care vin de sub marginea grifului,
+  se arcuiesc și apasă cu vârful pe coardă – arată *cum* ții degetul, nu doar unde. La barré, arătătorul
+  stă culcat peste corzi. La apariție cad pe rând; la schimbarea acordului se mută în arc.
   „X” deasupra corzilor care nu se cântă, „O” pentru cele libere.
-- **Corzile** vibrează (modul fundamental + armonica a doua, desenate între tastă și căluș) și se aprind
-  când sună. Atinge o coardă pe model ca s-o auzi.
+- **Corzile** sunt cilindri metalici (bronz înfășurat / oțel); vibrează (modul fundamental + armonica a doua,
+  calculate în shader, între tastă și căluș) și se aprind când sună. Atinge o coardă pe model ca s-o auzi.
 - **Pana** trece peste corzi în jos / în sus după modelul de strumming, inclusiv mișcările „în gol”.
 - **Camera**: rotire, zoom și mutare cu degetul (OrbitControls, cu limite); butoane „Din perspectiva mea”,
   „Din față”, „De sus pe grif”, cu tranziție lină. Unghiurile apropiate se încadrează automat pe tastele
@@ -48,12 +77,15 @@ metronom și de redarea progresiilor). Corzile și pana 3D doar ascultă și com
   simulatorul apare pe ecran** (`React.lazy`); restul aplicației rămâne la fel de rapid.
 - `frameloop="demand"`: se desenează doar când se mișcă ceva (în repaus: 0 cadre); randarea se oprește
   când simulatorul iese de pe ecran, iar după 8 s scena e demontată și contextul WebGL eliberat.
-- Piesele statice ale chitarei sunt unite pe material (~14 apeluri de desenare pentru toată chitara),
-  fără umbre, rezoluție maximă 1,75×, fără antialiasing pe ecranele foarte dense.
+- Piesele statice ale chitarei sunt unite pe material (~15 apeluri de desenare pentru toată chitara),
+  vibrația corzilor e calculată pe placa video, fără umbre, rezoluție maximă 1,75×, fără antialiasing pe
+  ecranele foarte dense. În animație: ~28 de apeluri de desenare pe cadru.
 - **Revenire automată la diagrama 2D**, cu un mesaj prietenos, dacă: browserul nu are WebGL, dispozitivul
   e foarte slab (≤ 2 nuclee sau ≤ 2 GB RAM – cu opțiunea „Încearcă totuși 3D”), rularea e constant prea
-  lentă (PerformanceMonitor), se pierde contextul WebGL sau partea 3D nu se poate încărca (ex. offline,
-  înainte să fi fost descărcată vreodată).
+  lentă (PerformanceMonitor) sau partea 3D nu se poate încărca. Mesajul arată și cauza tehnică, iar
+  butonul „Încearcă din nou 3D” repornește modelul. Three.js are nevoie de **WebGL 2**.
+- **Context WebGL pierdut** (des pe telefon, când treci prin alte aplicații): scena se reconstruiește
+  singură; doar dacă se întâmplă de 3 ori într-un minut se trece la 2D.
 
 Codul: `src/components/three/` (`Guitar3D.tsx` e componenta de folosit; `GuitarScene.tsx` e scena
 încărcată la cerere; `geometry.ts` și `chordLayout.ts` sunt funcții pure pentru poziții).
@@ -186,7 +218,7 @@ Un nivel nou se adaugă în `src/data/lessons/index.ts`; insigna lui apare autom
 
 ### Un acord nou
 
-În `src/music/chords.ts`: `c('B7', shape('x21202', '021304'))` – tastele de la coarda 6 la coarda 1
+Numele alternative sunt recunoscute automat (`Db` = `C#`, `A#m` = `Bbm`, `H` = `B`). În `src/music/chords.ts`: `c('B7', shape('x21202', '021304'))` – tastele de la coarda 6 la coarda 1
 (`x` = nu se cântă), apoi degetele (0 = niciunul). Barré-ul se detectează automat.
 
 ### Un cântec nou

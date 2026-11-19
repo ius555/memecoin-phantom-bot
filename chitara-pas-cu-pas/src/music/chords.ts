@@ -53,6 +53,12 @@ export const CHORDS: Chord[] = [
   c('G', shape('320003', '210003'), shape('320033', '210034', 'deschis, cu 4 degete'), shape('355433', '134211', 'barré la tasta 3 (forma E)')),
   c('A', shape('x02220', '001230'), shape('577655', '134211', 'barré la tasta 5 (forma E)')),
   c('B', shape('x24442', '013331', 'barré la tasta 2 (forma A)'), shape('7 9 9 8 7 7', '134211', 'barré la tasta 7 (forma E)')),
+  // majore cu barré (ca orice tonalitate să aibă toate acordurile)
+  c('C#', shape('x46664', '013331', 'barré la tasta 4 (forma A)'), shape('9 11 11 10 9 9', '134211', 'barré la tasta 9 (forma E)')),
+  c('Eb', shape('x68886', '013331', 'barré la tasta 6 (forma A)'), shape('x x 1 3 4 3', '001243', 'fără barré, sus pe grif')),
+  c('F#', shape('244322', '134211', 'barré la tasta 2 (forma E)'), shape('x 9 11 11 11 9', '013331', 'barré la tasta 9 (forma A)')),
+  c('Ab', shape('466544', '134211', 'barré la tasta 4 (forma E)'), shape('x 11 13 13 13 11', '013331', 'barré la tasta 11 (forma A)')),
+  c('Bb', shape('x13331', '013331', 'barré la tasta 1 (forma A)'), shape('6 8 8 7 6 6', '134211', 'barré la tasta 6 (forma E)')),
   // ---------- minore ----------
   c('Am', shape('x02210', '002310'), shape('577555', '134111', 'barré la tasta 5 (forma Em)')),
   c('Em', shape('022000', '023000'), shape('x 7 9 9 8 7', '013421', 'barré la tasta 7 (forma Am)')),
@@ -61,6 +67,11 @@ export const CHORDS: Chord[] = [
   c('F#m', shape('244222', '134111', 'barré la tasta 2 (forma Em)')),
   c('Cm', shape('x35543', '013421', 'barré la tasta 3 (forma Am)')),
   c('Gm', shape('355333', '134111', 'barré la tasta 3 (forma Em)')),
+  c('C#m', shape('x46654', '013421', 'barré la tasta 4 (forma Am)'), shape('9 11 11 9 9 9', '134111', 'barré la tasta 9 (forma Em)')),
+  c('Ebm', shape('x68876', '013421', 'barré la tasta 6 (forma Am)'), shape('x x 1 3 4 2', '001342', 'fără barré, sus pe grif')),
+  c('Fm', shape('133111', '134111', 'barré la tasta 1 (forma Em)'), shape('x 8 10 10 9 8', '013421', 'barré la tasta 8 (forma Am)')),
+  c('G#m', shape('466444', '134111', 'barré la tasta 4 (forma Em)'), shape('x 11 13 13 12 11', '013421', 'barré la tasta 11 (forma Am)')),
+  c('Bbm', shape('x13321', '013421', 'barré la tasta 1 (forma Am)'), shape('6 8 8 6 6 6', '134111', 'barré la tasta 6 (forma Em)')),
   // ---------- cu septimă ----------
   c('E7', shape('020100', '020100'), shape('022130', '023140', 'deschis, plin')),
   c('A7', shape('x02020', '002030')),
@@ -91,8 +102,25 @@ export const CHORDS: Chord[] = [
 
 const BY_NAME = new Map(CHORDS.map((ch) => [ch.name, ch]))
 
+/** Același sunet, alt nume (enarmonice): Db = C#, D# = Eb etc. */
+const ENHARMONIC: Record<string, string> = { Db: 'C#', 'D#': 'Eb', Gb: 'F#', 'G#': 'Ab', 'A#': 'Bb', Cb: 'B', Fb: 'E', 'E#': 'F', 'B#': 'C' }
+const ENHARMONIC_MINOR: Record<string, string> = { Db: 'C#', 'D#': 'Eb', Gb: 'F#', Ab: 'G#', 'A#': 'Bb' }
+
+/** Caută un acord după nume; acceptă și numele enarmonice (Db, A#m...) și „Hm”-ul german (= Bm). */
 export function getChord(name: string): Chord | undefined {
-  return BY_NAME.get(name)
+  const direct = BY_NAME.get(name)
+  if (direct) return direct
+  const m = name.trim().match(/^([A-H])([#b]?)(.*)$/)
+  if (!m) return undefined
+  let root = (m[1] === 'H' ? 'B' : m[1]) + m[2]
+  const rest = m[3]
+  root = (rest.startsWith('m') && !rest.startsWith('maj') ? ENHARMONIC_MINOR[root] : ENHARMONIC[root]) ?? root
+  return BY_NAME.get(root + rest)
+}
+
+/** Numele canonic din bibliotecă (ex. „A#” → „Bb”), sau numele primit dacă nu există. */
+export function canonicalChordName(name: string): string {
+  return getChord(name)?.name ?? name
 }
 
 const QUALITY_RO: Record<ChordQuality, string> = {
@@ -116,7 +144,9 @@ export const QUALITY_GROUPS: { id: string; label: string; qualities: ChordQualit
 
 /** Numele românesc complet, ex. "Am" → "La minor" */
 export function chordFullName(ch: Chord): string {
-  return `${SOLFEGE[NOTE_NAMES[pitchClass(ch.root)]] ?? ch.root} ${QUALITY_RO[ch.quality]}`
+  const flat = ch.root.length === 2 && ch.root[1] === 'b'
+  const rootName = flat ? `${SOLFEGE[ch.root[0]]} bemol` : (SOLFEGE[NOTE_NAMES[pitchClass(ch.root)]] ?? ch.root)
+  return `${rootName} ${QUALITY_RO[ch.quality]}`
 }
 
 /** Notele (nume) pe care le cântă fiecare coardă dintr-o poziție. */

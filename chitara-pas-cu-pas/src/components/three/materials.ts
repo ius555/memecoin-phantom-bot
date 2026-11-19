@@ -1,66 +1,114 @@
 /**
- * Materiale și culori pentru modelul 3D.
- * Stil "cartoon": MeshToonMaterial cu doar 3 trepte de lumină (ieftin pe telefon, fără umbre).
- * Culorile urmează paleta aplicației: lemn cald, crem, verde salvie.
+ * Materialele chitarei 3D – realiste (PBR: MeshStandardMaterial), cu texturi procedurale de lemn,
+ * metal pentru taste și chei, os pentru prăguș și ștegul. Reflexiile vin dintr-un mediu de lumină
+ * generat local (RoomEnvironment, vezi GuitarScene), deci nu se descarcă nimic.
+ * Fiecare material se creează o singură dată și se refolosește.
  */
 import * as THREE from 'three'
-
-let gradient: THREE.DataTexture | null = null
-
-/** Textura de 3 trepte care dă aspectul de desen animat. */
-function toonGradient(): THREE.DataTexture {
-  if (gradient) return gradient
-  const data = new Uint8Array([110, 110, 110, 255, 190, 190, 190, 255, 255, 255, 255, 255])
-  gradient = new THREE.DataTexture(data, 3, 1, THREE.RGBAFormat)
-  gradient.minFilter = THREE.NearestFilter
-  gradient.magFilter = THREE.NearestFilter
-  gradient.needsUpdate = true
-  return gradient
-}
-
-const cache = new Map<string, THREE.Material>()
-
-/** Material toon (refolosit din cache – un singur material pe culoare). */
-export function toon(color: string): THREE.MeshToonMaterial {
-  const key = `toon:${color}`
-  let m = cache.get(key) as THREE.MeshToonMaterial | undefined
-  if (!m) {
-    m = new THREE.MeshToonMaterial({ color, gradientMap: toonGradient() })
-    cache.set(key, m)
-  }
-  return m
-}
-
-/** Material fără lumină (pentru detalii plate: gura, inlay-uri). */
-export function flat(color: string): THREE.MeshBasicMaterial {
-  const key = `flat:${color}`
-  let m = cache.get(key) as THREE.MeshBasicMaterial | undefined
-  if (!m) {
-    m = new THREE.MeshBasicMaterial({ color })
-    cache.set(key, m)
-  }
-  return m
-}
+import { mahogany, rosette, rosewood, spruce, tortoise } from './textures'
 
 export const COLORS = {
-  top: '#e8b97f', // fața din molid, culoarea mierii
-  sides: '#a5643a', // lateralele și spatele din nuc
-  binding: '#f3e6cf', // filetul crem de pe margine
-  rosette: '#3f6b4a', // rozeta – verdele salvie al aplicației
-  hole: '#2a1a10',
-  neck: '#9a6136',
-  fretboard: '#4a2d1b',
-  fret: '#e7e0d0',
-  inlay: '#f3e6cf',
-  bone: '#f7efdc',
-  bridge: '#4a2c18',
-  headstock: '#5c3a22',
-  peg: '#efe6d3',
-  post: '#b9b0a0',
   woundString: '#c9a06a', // corzile groase (bronz)
-  plainString: '#ddd8cc', // corzile subțiri (oțel)
-  guard: '#6b3f22',
-  pick: '#c8643a', // pana – teracotă
+  plainString: '#e4e2dc', // corzile subțiri (oțel)
+  pick: '#ff6b5b', // pana – coral, culoarea aplicației
+}
+
+/** Repetă o textură astfel încât `size` cm din geometrie să acopere textura o dată. */
+function scaled(tex: THREE.Texture, sizeU: number, sizeV: number, offsetV = 0.5): THREE.Texture {
+  const t = tex.clone()
+  t.needsUpdate = true
+  t.repeat.set(1 / sizeU, 1 / sizeV)
+  t.offset.set(0, offsetV)
+  return t
+}
+
+type Key =
+  | 'top'
+  | 'sides'
+  | 'binding'
+  | 'rosette'
+  | 'hole'
+  | 'guard'
+  | 'bridge'
+  | 'bone'
+  | 'neck'
+  | 'fretboard'
+  | 'fret'
+  | 'inlay'
+  | 'headstock'
+  | 'post'
+  | 'peg'
+
+const cache = new Map<Key, THREE.Material>()
+
+/** Materialul unei piese a chitarei, după cheie. */
+export function material(key: Key): THREE.Material {
+  const hit = cache.get(key)
+  if (hit) return hit
+  let m: THREE.Material
+  switch (key) {
+    case 'top': // molid lăcuit
+      m = new THREE.MeshStandardMaterial({ map: scaled(spruce(), 50, 40), roughness: 0.32, metalness: 0 })
+      break
+    case 'sides': // palisandru lăcuit
+      m = new THREE.MeshStandardMaterial({ map: scaled(rosewood(), 40, 30), roughness: 0.38, metalness: 0 })
+      break
+    case 'binding':
+      m = new THREE.MeshStandardMaterial({ color: '#f4ead6', roughness: 0.35 })
+      break
+    case 'rosette':
+      m = new THREE.MeshStandardMaterial({ map: rosette(), roughness: 0.45, transparent: true })
+      break
+    case 'hole':
+      m = new THREE.MeshBasicMaterial({ color: '#140b06' })
+      break
+    case 'guard':
+      m = new THREE.MeshStandardMaterial({ map: scaled(tortoise(), 8, 8, 0), roughness: 0.25 })
+      break
+    case 'bridge':
+      m = new THREE.MeshStandardMaterial({ color: '#3a1d10', roughness: 0.55 })
+      break
+    case 'bone':
+      m = new THREE.MeshStandardMaterial({ color: '#f6efe0', roughness: 0.45 })
+      break
+    case 'neck':
+      m = new THREE.MeshStandardMaterial({ map: scaled(mahogany(), 40, 8), roughness: 0.4 })
+      break
+    case 'fretboard': // palisandru mat
+      m = new THREE.MeshStandardMaterial({ map: scaled(rosewood(), 44, 8), roughness: 0.7 })
+      break
+    case 'fret': // alamă-nichel
+      m = new THREE.MeshStandardMaterial({ color: '#dcdcd4', roughness: 0.22, metalness: 1 })
+      break
+    case 'inlay': // sidef
+      m = new THREE.MeshStandardMaterial({ color: '#f6f1e6', roughness: 0.15, metalness: 0.1, emissive: '#3a3630' })
+      break
+    case 'headstock':
+      m = new THREE.MeshStandardMaterial({ map: scaled(rosewood(), 20, 8), roughness: 0.35 })
+      break
+    case 'post': // cromat
+      m = new THREE.MeshStandardMaterial({ color: '#d9dadc', roughness: 0.18, metalness: 1 })
+      break
+    case 'peg': // butoanele cheilor
+      m = new THREE.MeshStandardMaterial({ color: '#efe7d6', roughness: 0.3, metalness: 0.05 })
+      break
+  }
+  cache.set(key, m!)
+  return m!
+}
+
+export type MaterialKey = Key
+
+/** Material colorat (pentru degete, pană) – din cache, pe culoare. */
+const colored = new Map<string, THREE.MeshStandardMaterial>()
+export function coloredMaterial(color: string, roughness = 0.45): THREE.MeshStandardMaterial {
+  const key = `${color}|${roughness}`
+  let m = colored.get(key)
+  if (!m) {
+    m = new THREE.MeshStandardMaterial({ color, roughness, metalness: 0 })
+    colored.set(key, m)
+  }
+  return m
 }
 
 /** Citește o culoare definită în CSS (ex. culorile degetelor --f1...), ca 3D-ul să urmeze tema. */

@@ -145,7 +145,7 @@ export function Fretboard({ marks = [], from = 0, to = 12, interactive = true, f
           )}
         {/* marcajele */}
         {marks.map((m, k) => {
-          const color = m.color ?? (m.finger ? FINGER_COLORS[m.finger] : 'var(--wood)')
+          const color = m.color ?? (m.finger ? FINGER_COLORS[m.finger] : 'var(--accent)')
           return (
             <g
               key={`${m.string}-${m.fret}-${k}`}

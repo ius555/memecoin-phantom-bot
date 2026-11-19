@@ -97,7 +97,7 @@ export function ChordsPage() {
               className={`card !p-3 transition hover:border-primary active:scale-[0.98] ${is3d && selected === ch.name ? 'border-primary ring-2 ring-primary/30' : ''}`}
             >
               <ChordDiagram chord={ch} still />
-              {ch.shapes.length > 1 && <div className="mt-1 text-center text-xs font-bold text-wood">{ch.shapes.length} variante</div>}
+              {ch.shapes.length > 1 && <div className="mt-1 text-center text-xs font-bold text-accent">{ch.shapes.length} variante</div>}
             </Link>
           ))}
         </div>
